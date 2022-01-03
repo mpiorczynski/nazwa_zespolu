@@ -18,4 +18,12 @@ Spotify
 - które utwory ile słuchamy, a ile trwają
 - czas słuchania pioesnki przez użytkownika
 - ilość przesłuchań danej piosenki
--  
+- pobieranie informacji o gatunkach piosenek z SpotifyAPI
+- kategorie: utwory, artyści
+- aktywność w ciągu dnia lineploty dla poszczególnych osób 
+- badanie zgodności muzycznej preferencji w nawykach słuchania -> gatunki/w okresach słuchania 
+- kontrolki zmieniające naraz kilka wykresów
+- wykresy pokazujące trzy osoby oddzielnie i na jednym wykresie
+- Przesłuchane minuty
+- 1 zakładka = 1 wykres -> aplikacja traci na funkcjonalności
+
