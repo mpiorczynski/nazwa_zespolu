@@ -1,0 +1,21 @@
+Spotify
+- czas dzienny/tygodniowy/roczny sluchanej muzyki
+- anliza sluchanych gatunków
+- zainnteresowania i preferencje
+- powiazania pomiedzy sluchanymi przez nasz utworami -> siec
+- analiza nastrojów muzyki 
+- calendar heatmap, day of weak and weak heatmap
+- heatmapa według dnia tygodnia i godziny - różne statystyki 
+- wykres liniowy zmiany statystki w czasie
+- porównanie dwóch statystyk scatter plot
+- wykrywanie klastrów utworów o podobnych cechach -> gatunek, nastrój, czas trwania, wykonawaca
+- most listened to artists
+- radarplot hourly 
+- ulubiony gatunek
+- minuty słuchania
+- totals, average	
+- ciemna kolorystyka
+- które utwory ile słuchamy, a ile trwają
+- czas słuchania pioesnki przez użytkownika
+- ilość przesłuchań danej piosenki
+-  
