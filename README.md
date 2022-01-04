@@ -5,3 +5,5 @@
 3. Mikołaj - API i gatunki (radarplot)
 
 Następne spotkanie: 15.01 (sobota) około 18:00
+
+* Ogarnąć JavaScript i CSS
