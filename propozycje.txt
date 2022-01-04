@@ -26,4 +26,4 @@ Spotify
 - wykresy pokazujące trzy osoby oddzielnie i na jednym wykresie
 - Przesłuchane minuty
 - 1 zakładka = 1 wykres -> aplikacja traci na funkcjonalności
-
+- ile jednego arysty na raz, a ile różnych
