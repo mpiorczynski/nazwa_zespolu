@@ -42,7 +42,7 @@ features_df <- data.frame(
 
 for (i in 1:nrow(features_df)) {
   cat(paste0("Processing...: ", i, " of 4584", sep = "\n"))
-  track_uri <- features_df$spotify_track_uri[3700]
+  track_uri <- features_df$spotify_track_uri[i]
   track_id <- str_sub(track_uri, -22)
   track_features <- get_track_audio_features(track_id)
   features_df[i, 3:20] <- track_features
