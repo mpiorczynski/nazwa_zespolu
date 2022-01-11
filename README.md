@@ -8,3 +8,6 @@ Następne spotkanie: środa 15:45 - 16:15 / po ISI ?
                     czwartek 10:00
 
 * Ogarnąć JavaScript i CSS
+
+## Przydatne linki:
+* https://jsfiddle.net/dztoqc52/2/
