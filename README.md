@@ -11,3 +11,4 @@ Następne spotkanie: środa 15:45 - 16:15 / po ISI ?
 
 ## Przydatne linki:
 * https://jsfiddle.net/dztoqc52/2/
+* https://codepen.io/trending
