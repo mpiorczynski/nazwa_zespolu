@@ -3,7 +3,7 @@ library(jsonlite)
 library(stringr)
 
 # data loading
-path_to_data <- "data/my_spotify_data_extended/endsong.json"
+path_to_data <- "data/krzysiek/endsong.json"
 streaming_history_df <- fromJSON(path_to_data)
 
 # access to API
@@ -39,8 +39,8 @@ features_df <- data.frame(
   time_signature = character(n)
 )
 
-for (i in 1:nrow(features_df)) {
-  cat(paste0("Processing...: ", i, " of 4584", sep = "\n"))
+for (i in 1:n) {
+  cat(paste0("Processing...: ", i, " of ", n, sep = "\n"))
   track_uri <- features_df$spotify_track_uri[i]
   track_id <- str_sub(track_uri, -22)
   track_features <- get_track_audio_features(track_id)
@@ -55,6 +55,6 @@ for (i in 1:nrow(features_df)) {
 features_df
 
 # saving output
-path_to_save <- "./data"
+path_to_save <- "data/krzysiek/"
 filepath <- file.path(path_to_save, "tracks_features.csv")
 write.csv(features_df, filepath, row.names = FALSE)
