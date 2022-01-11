@@ -15,3 +15,5 @@ Następne spotkanie: środa 15:45 - 16:15 / po ISI ?
 * https://codepen.io/trending
 * https://icons.getbootstrap.com/
 * https://fonts.google.com/
+* https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/JavaScript_basics
+* https://learnxinyminutes.com/docs/javascript/
