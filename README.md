@@ -10,5 +10,6 @@ Następne spotkanie: środa 15:45 - 16:15 / po ISI ?
 * Ogarnąć JavaScript i CSS
 
 ## Przydatne linki:
+* https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/CSS_basics
 * https://jsfiddle.net/dztoqc52/2/
 * https://codepen.io/trending
