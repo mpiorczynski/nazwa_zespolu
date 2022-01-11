@@ -1,5 +1,4 @@
 library(spotifyr)
-library(dplyr)
 library(jsonlite)
 library(stringr)
 
