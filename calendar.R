@@ -5,10 +5,13 @@ library(ggplot2)
 library(shiny)
 library(shinycssloaders)
 library(stringr)
+library(shinyWidgets)
+library(plotly)
 
 # data
 wdays <- c("Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota")
 hours <- sprintf("%02d:00-%02d:00", 0:23, 1:24)
+p2_person <- NULL
 
 
 df_mikolaj <- fromJSON("data/mikołaj/endsong.json") %>% 
@@ -64,24 +67,46 @@ df_daniel <- bind_rows(df_mikolaj, df_krzysiek)
 
 server <- function(input, output, session){
   
-  output$p2_density <- renderPlot({
-    if(input$p2_person == "Daniel"){
-      df <- df_daniel
+  output$p2_density <- renderPlotly({
+    ed <- event_data("plotly_click", source="p2_comp")
+    if(is.null(ed)){
+      df <- bind_rows(list(daniel=df_daniel,
+                      mikolaj=df_mikolaj,
+                      krzysiek=df_krzysiek),
+                      .id="person")
+      
+      p <- ggplot(df, aes(x=hour*60*60 + min*60 + s, color=person)) +
+        geom_density(aes(weight=ms_played)) +
+        scale_y_continuous(name="", breaks=c()) +
+        scale_x_continuous(name = "Hour", breaks = (0:24)*60*60, labels=0:24)
+      
+      ggplotly(p, source = "p2_comp") %>%
+        layout(yaxis = list(ticks="", showticklabels=FALSE))
     }
-    else if(input$p2_person == "Mikołaj"){
-      df <- df_mikolaj
+    else{
+      p2_person <- c("daniel", "krzysiek", "mikolaj")[ed$curveNumber + 1]
+      if(p2_person == "daniel"){
+        df <- df_daniel
+      }
+      else if(p2_person == "mikolaj"){
+        df <- df_mikolaj
+      }
+      else {
+        df <- df_krzysiek
+      }
+      df <- df %>% filter(ts > input$p2_time[1], ts < input$p2_time[2])
+      
+      p <- ggplot(df, aes(x=hour*60*60 + min*60 + s, y=..count../2000, color=platform)) +
+        geom_density(aes(weight=ms_played)) +
+        scale_y_continuous(name="", breaks=c()) +
+        scale_x_continuous(name = "Hour", breaks = (0:24)*60*60, labels=0:24)
+      
+      ggplotly(p, source = "p2_density") %>%
+        layout(yaxis = list(ticks="", showticklabels=FALSE))
     }
-    else {
-      df <- df_krzysiek
-    }
-    df <- df %>% filter(ts > input$p2_time[1], ts < input$p2_time[2])
-    ggplot(df, aes(x=hour*60*60 + min*60 + s, y=..count../2000, color=platform)) +
-      geom_density(aes(weight=ms_played), alpha=0.1) +
-      scale_y_continuous(name = "", breaks=NULL) + 
-      scale_x_continuous(name = "Hour", breaks = (0:24)*60*60, labels=0:24)
   })
   
-  output$p2_time_input <- renderUI({
+  output$p2_UI_time_input <- renderUI({
     if(input$p2_person == "Daniel"){
       df <- df_daniel
     }
@@ -105,24 +130,72 @@ server <- function(input, output, session){
       timeFormat = "%b %Y"
     )
   })
+  
+  output$event <- renderPrint({
+    event_data(event="plotly_click", source="p2_comp")
+  })
+  
+  output$p2_heatmap <- renderPlot({
+    if(input$p2_person == "Daniel"){
+      df <- df_daniel
+    }
+    else if(input$p2_person == "Mikołaj"){
+      df <- df_mikolaj
+    }
+    else {
+      df <- df_krzysiek
+    }
+    df <- df %>% filter(ts > input$p2_time[1], ts < input$p2_time[2])
+    
+    df_heatmap <- expand.grid(weekday = 1:7, hour = 0:23)
+    df_heatmap <- df_heatmap %>% 
+      merge(
+        df %>%
+          group_by(weekday, hour) %>% 
+          summarise(z = sum(ms_played)),
+        by = c("weekday", "hour"),
+        all.x=TRUE
+      ) %>% 
+      mutate(z = ifelse(is.na(z), 0, z))
+    
+    ggplot(df_heatmap) + 
+      geom_tile(aes(x=weekday, y=hour, fill=z)) +
+      scale_x_continuous(breaks=1:7, labels=wdays) +
+      scale_y_reverse(breaks=0:23, labels=hours) +
+      theme(
+        legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank()
+      ) +
+      scale_fill_gradient(high = "green", low = "black") +
+      coord_fixed(ratio = 2/5)
+  })
 }
 
 ui1 <- fluidPage()
 
 ui2 <- fluidPage(
   titlePanel("Visualization 2."),
+  
   sidebarLayout(
     sidebarPanel(
+      top=0,
+      bottom=0,
+      left=0,
+      fixed=TRUE,
       selectInput(
         inputId = "p2_person", 
         label = "Select person:", 
         choices = c("Daniel", "Mikołaj", "Krzysiek"),
         selected = "Krzysiek"
       ),
-      uiOutput("p2_time_input")
+      uiOutput("p2_UI_time_input")
     ),
+    
     mainPanel(
-      plotOutput("p2_density")
+      plotlyOutput("p2_density"),
+      verbatimTextOutput("event"),
+      plotOutput("p2_heatmap")
     )
   )
 )
