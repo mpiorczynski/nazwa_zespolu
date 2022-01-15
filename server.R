@@ -6,7 +6,7 @@ library(jsonlite)
 library(forcats)
 library(plotly)
 #data
-streaming_history_df <- fromJSON("data/StreamingHistory0.json")
+streaming_history_df <- fromJSON("data/mikołaj/StreamingHistory0.json")
 dfDates <- streaming_history_df%>% 
   mutate(endTime = as.Date(endTime)) %>% 
   mutate(
