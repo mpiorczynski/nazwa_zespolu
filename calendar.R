@@ -7,6 +7,7 @@ library(shinycssloaders)
 library(stringr)
 library(shinyWidgets)
 library(plotly)
+library(shinyjs)
 
 # data
 wdays <- c("Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota")
@@ -189,11 +190,17 @@ server <- function(input, output, session){
       plotOutput("p2_heatmap")
     }
   })
+  
+  observeEvent(input$p2_reset, {
+    runjs("Shiny.setInputValue('plotly_click-p2_comp', null);")
+  })
 }
 
 ui1 <- fluidPage()
 
 ui2 <- fluidPage(
+  useShinyjs(),
+  
   titlePanel("Visualization 2."),
     
   fluidRow(
