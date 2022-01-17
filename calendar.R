@@ -11,8 +11,6 @@ library(plotly)
 # data
 wdays <- c("Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota")
 hours <- sprintf("%02d:00-%02d:00", 0:23, 1:24)
-p2_person <- NULL
-
 
 df_mikolaj <- fromJSON("data/mikołaj/endsong.json") %>% 
   select(ts,
@@ -70,10 +68,11 @@ server <- function(input, output, session){
   output$p2_density <- renderPlotly({
     ed <- event_data("plotly_click", source="p2_comp")
     if(is.null(ed)){
-      df <- bind_rows(list(daniel=df_daniel,
-                      mikolaj=df_mikolaj,
-                      krzysiek=df_krzysiek),
-                      .id="person")
+      df <- bind_rows(list(df_daniel,
+                      df_mikolaj,
+                      df_krzysiek),
+                      .id="person") %>%
+        filter(ts > input$p2_time[1], ts < input$p2_time[2])
       
       p <- ggplot(df, aes(x=hour*60*60 + min*60 + s, color=person)) +
         geom_density(aes(weight=ms_played)) +
@@ -81,7 +80,8 @@ server <- function(input, output, session){
         scale_x_continuous(name = "Hour", breaks = (0:24)*60*60, labels=0:24)
       
       ggplotly(p, source = "p2_comp") %>%
-        layout(yaxis = list(ticks="", showticklabels=FALSE))
+        layout(yaxis = list(ticks="", showticklabels=FALSE)) %>% 
+        config(displayModeBar=FALSE)
     }
     else{
       p2_person <- c("daniel", "krzysiek", "mikolaj")[ed$curveNumber + 1]
@@ -102,21 +102,31 @@ server <- function(input, output, session){
         scale_x_continuous(name = "Hour", breaks = (0:24)*60*60, labels=0:24)
       
       ggplotly(p, source = "p2_density") %>%
-        layout(yaxis = list(ticks="", showticklabels=FALSE))
+        layout(yaxis = list(ticks="", showticklabels=FALSE)) %>% 
+        config(displayModeBar=FALSE)
     }
   })
   
   output$p2_UI_time_input <- renderUI({
-    if(input$p2_person == "Daniel"){
-      df <- df_daniel
+    ed <- event_data("plotly_click", source="p2_comp")
+    if(is.null(ed)){
+      df <- bind_rows(list(df_daniel,
+                           df_mikolaj,
+                           df_krzysiek),
+                      .id="person")
     }
-    else if(input$p2_person == "Mikołaj"){
-      df <- df_mikolaj
+    else{
+      p2_person <- c("daniel", "krzysiek", "mikolaj")[ed$curveNumber + 1]
+      if(p2_person == "Daniel"){
+        df <- df_daniel
+      }
+      else if(p2_person == "Mikołaj"){
+        df <- df_mikolaj
+      }
+      else {
+        df <- df_krzysiek
+      }
     }
-    else {
-      df <- df_krzysiek
-    }
-    
     min_time <- min(df$ts)
     max_time <- max(df$ts)
     
@@ -131,15 +141,13 @@ server <- function(input, output, session){
     )
   })
   
-  output$event <- renderPrint({
-    event_data(event="plotly_click", source="p2_comp")
-  })
-  
   output$p2_heatmap <- renderPlot({
-    if(input$p2_person == "Daniel"){
+    ed <- event_data("plotly_click", source="p2_comp")
+    p2_person <- c("daniel", "krzysiek", "mikolaj")[ed$curveNumber + 1]
+    if(p2_person == "Daniel"){
       df <- df_daniel
     }
-    else if(input$p2_person == "Mikołaj"){
+    else if(p2_person == "Mikołaj"){
       df <- df_mikolaj
     }
     else {
@@ -170,34 +178,35 @@ server <- function(input, output, session){
       scale_fill_gradient(high = "green", low = "black") +
       coord_fixed(ratio = 2/5)
   })
+  
+  output$p2_UI_heatmap <- renderUI({
+    ed <- event_data("plotly_click", source="p2_comp")
+    if(is.null(ed)){
+      p("Click on the graph to choose a person and see their heatmap.")
+    }
+    else{
+      plotOutput("p2_heatmap")
+    }
+  })
 }
 
 ui1 <- fluidPage()
 
 ui2 <- fluidPage(
   titlePanel("Visualization 2."),
-  
-  sidebarLayout(
-    sidebarPanel(
-      top=0,
-      bottom=0,
-      left=0,
-      fixed=TRUE,
-      selectInput(
-        inputId = "p2_person", 
-        label = "Select person:", 
-        choices = c("Daniel", "Mikołaj", "Krzysiek"),
-        selected = "Krzysiek"
-      ),
-      uiOutput("p2_UI_time_input")
+    
+  fluidRow(
+    column(8,
+           h4("O której godzinie słuchamy muzyki?"),
+           plotlyOutput("p2_density")
     ),
     
-    mainPanel(
-      plotlyOutput("p2_density"),
-      verbatimTextOutput("event"),
-      plotOutput("p2_heatmap")
+    column(4,
+           uiOutput("p2_UI_heatmap")
     )
-  )
+  ),
+  
+  uiOutput("p2_UI_time_input")
 )
 
 ui3 <- fluidPage()  
