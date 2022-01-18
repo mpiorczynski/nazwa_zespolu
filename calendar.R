@@ -11,7 +11,7 @@ library(shinyjs)
 library(kit)
 
 # data
-wdays <- c("Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota")
+wdays <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Sturday")
 hours <- sprintf("%02d:00-%02d:00", 0:23, 1:24)
 p2_ed <- NULL
 
@@ -177,7 +177,7 @@ server <- function(input, output, session){
     )
   })
   
-  output$p2_heatmap <- renderPlot({
+  output$p2_heatmap <- renderPlotly({
     p2_ed <- event_data("plotly_click", source="p2_comp")
     p2_person <- c("daniel", "krzysiek", "mikolaj")[p2_ed$curveNumber + 1]
     if(p2_person == "Daniel"){
@@ -202,17 +202,44 @@ server <- function(input, output, session){
       ) %>% 
       mutate(z = ifelse(is.na(z), 0, z))
     
-    ggplot(df_heatmap) + 
-      geom_tile(aes(x=weekday, y=hour, fill=z)) +
+    p <- ggplot(df_heatmap) + 
+      geom_tile(aes(x=weekday,
+                    y=hour,
+                    fill=z,
+                    text=paste("Day: ", wdays[weekday],
+                               "\nTime: ", hours[hour],
+                               "\nTotal listening time: ",
+                               strftime(
+                                 as.POSIXlt.numeric(z/1000,
+                                                    format="%OS",
+                                                    origin="")-3600,
+                                 format="%H:%M:%OS"))),
+                color = "#444444", #powinny być przerwy między kafelkami
+                lwd = 1) +         #ale plotly nie dziła :(((
       scale_x_continuous(breaks=1:7, labels=wdays) +
       scale_y_reverse(breaks=0:23, labels=hours) +
-      theme(
-        legend.position = "none",
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank()
-      ) +
-      scale_fill_gradient(high = "green", low = "black") +
-      coord_fixed(ratio = 2/5)
+      scale_fill_gradient(high = "#1ED760",
+                          low = "black",
+                          breaks = c(max(df_heatmap$z), min(df_heatmap$z)),
+                          labels = c("More", "Less")) +
+      theme(panel.background = element_rect(fill = "#444444"),
+            plot.background = element_rect(fill = "#444444"),
+            text = element_text(color = "#FFFFFF"),
+            axis.text.x = element_text(color = "#FFFFFF", angle=45),
+            axis.text.y = element_text(color = "#FFFFFF"),
+            legend.text = element_text(colour = "#FFFFFF"),
+            legend.background = element_rect(fill="#444444", colour="#888888"),
+            axis.ticks = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.grid.major = element_blank(),
+            axis.title.x = element_text()) +
+      #coord_fixed(ratio = 1) +
+      labs(x = "Day of Week",
+           y = "Hour",
+           fill = "")
+    
+    ggplotly(p, source="p2_tile", tooltip="text") %>% 
+      config(displayModeBar=FALSE)
   })
   
   output$p2_debug <- renderPrint(
@@ -225,7 +252,7 @@ server <- function(input, output, session){
       p("Click on the graph to choose a person and see their heatmap.")
     }
     else{
-      plotOutput("p2_heatmap")
+      plotlyOutput("p2_heatmap")
     }
   })
   
@@ -242,24 +269,24 @@ ui2 <- fluidPage(
   titlePanel("Visualization 2."),
     
   fluidRow(
-    column(8,
+    column(6,
            h4("O której godzinie słuchamy muzyki?"),
            plotlyOutput("p2_density")
     ),
     
-    column(4,
+    column(6,
            h4("Kiedy w tygodniu słuchamy muzyki?"),
            uiOutput("p2_UI_heatmap")
     )
   ),
   
   fluidRow(
-    column(3,
+    column(2,
            actionButton(inputId = "p2_reset",
                         label = "",
                         icon = icon("backward"))
     ),
-    column(5,
+    column(4,
            uiOutput("p2_UI_time_input") 
     )
   )
