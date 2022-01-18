@@ -8,6 +8,7 @@ library(stringr)
 library(shinyWidgets)
 library(plotly)
 library(shinyjs)
+library(kit)
 
 # data
 wdays <- c("Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota")
@@ -70,18 +71,35 @@ server <- function(input, output, session){
   output$p2_density <- renderPlotly({
     p2_ed <- event_data("plotly_click", source="p2_comp")
     if(is.null(p2_ed)){
-      df <- bind_rows(list(df_daniel,
-                      df_mikolaj,
-                      df_krzysiek),
+      df <- bind_rows(list(Daniel=df_daniel,
+                      Mikołaj=df_mikolaj,
+                      Krzysiek=df_krzysiek),
                       .id="person") %>%
         filter(ts > input$p2_time[1], ts < input$p2_time[2])
       
-      p <- ggplot(df, aes(x=hour*60*60 + min*60 + s, color=person)) +
-        geom_density(aes(weight=ms_played)) +
-        scale_y_continuous(name="", breaks=c()) +
-        scale_x_continuous(name = "Hour", breaks = (0:24)*60*60, labels=0:24)
+      p <- ggplot(df, aes(x=hour*60*60 + min*60 + s,
+                          color=person)) +
+        geom_density(aes(weight=ms_played,
+                         text=paste("Person: ", person, "\nClick to see details."))) +
+        scale_y_continuous(name="") +
+        scale_x_continuous(name = "Hour",
+                           breaks = (0:8)*60*60*3,
+                           labels = seq(from=0, to=24, by=3)) +
+        scale_color_manual(values = c("#1ED760", "#00F5D2", "#23F500")) +
+        theme(panel.background = element_rect(fill = "#444444"),
+              plot.background = element_rect(fill = "#444444"),
+              text = element_text(color = "#FFFFFF"),
+              axis.text = element_text(color = "#FFFFFF"),
+              legend.text = element_text(colour = "#FFFFFF"),
+              legend.background = element_rect(fill="#444444", colour="#888888"),
+              axis.ticks = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+              axis.title.y = element_blank(),
+              axis.title.x = element_text()) +
+        labs(colour = "Person")
       
-      ggplotly(p, source = "p2_comp") %>%
+      ggplotly(p, source = "p2_comp", tooltip="text") %>%
         layout(yaxis = list(ticks="", showticklabels=FALSE)) %>% 
         config(displayModeBar=FALSE)
     }
@@ -97,11 +115,27 @@ server <- function(input, output, session){
         df <- df_krzysiek
       }
       df <- df %>% filter(ts > input$p2_time[1], ts < input$p2_time[2])
+      df$platform <- factor(df$platform, levels = c("PC", "Phone", "Other"))
       
       p <- ggplot(df, aes(x=hour*60*60 + min*60 + s, y=..count../2000, color=platform)) +
         geom_density(aes(weight=ms_played)) +
-        scale_y_continuous(name="", breaks=c()) +
-        scale_x_continuous(name = "Hour", breaks = (0:24)*60*60, labels=0:24)
+        scale_y_continuous(name="") +
+        scale_x_continuous(name = "Hour",
+                           breaks = (0:8)*60*60*3,
+                           labels = seq(from=0, to=24, by=3)) +
+        scale_color_manual(values = c("#1ED760", "#00F5D2", "#23F500")) +
+        theme(panel.background = element_rect(fill = "#444444"),
+              plot.background = element_rect(fill = "#444444"),
+              text = element_text(color = "#FFFFFF"),
+              axis.text = element_text(color = "#FFFFFF"),
+              legend.text = element_text(colour = "#FFFFFF"),
+              legend.background = element_rect(fill="#444444", colour="#888888"),
+              axis.ticks = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+              axis.title.y = element_blank(),
+              axis.title.x = element_text()) +
+        labs(colour = "Device")
       
       ggplotly(p, source = "p2_density") %>%
         layout(yaxis = list(ticks="", showticklabels=FALSE)) %>% 
@@ -180,6 +214,10 @@ server <- function(input, output, session){
       scale_fill_gradient(high = "green", low = "black") +
       coord_fixed(ratio = 2/5)
   })
+  
+  output$p2_debug <- renderPrint(
+    input$p2_time
+  )
   
   output$p2_UI_heatmap <- renderUI({
     p2_ed <- event_data("plotly_click", source="p2_comp")
