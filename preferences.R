@@ -6,6 +6,9 @@ library(jsonlite)
 library(tidyr)
 library(stringr)
 library(bslib)
+library(wordcloud)
+library(wordcloud2)
+library(ggstream)
 
 
 # data
@@ -155,7 +158,7 @@ unify_genres <- function(x, genre_seeds) {
 }
 
 my_theme <- bs_theme(
-  bg = "#121212",
+  bg = "#191414",
   fg = "#FFFFFF",
   primary = "#1CD155",
   base_font = font_google("Proza Libre"),
@@ -167,12 +170,21 @@ my_theme <- bs_theme(
 server <- function(input, output){
   
   output$tempo_histogram <- renderPlot({
-    df_daniel %>% 
+    
+    if (input$person == "Daniel") {
+      df <- df_daniel
+    } else if (input$person == "Krzysiek") {
+      df <- df_krzysiek
+    } else {
+      df <- df_mikolaj
+    }
+    
+    df %>% 
       ggplot(aes(tempo)) + 
-      geom_histogram(binwidth = 4, fill = "#65d36e", alpha = 0.87) +
+      geom_histogram(binwidth = 4, fill = "#1DB954", alpha = 0.87) +
       theme_dark() + 
       theme(
-        plot.background = element_rect(fill = "#121212", colour = "#121212"),
+        plot.background = element_rect(fill = "#191414", colour = "#191414"),
         panel.background = element_blank(),
         panel.border = element_rect(fill = NA, colour = NA),
         panel.grid.major = element_blank(),
@@ -182,10 +194,18 @@ server <- function(input, output){
       ) 
   })
   
-  output$genres <- renderPlotly({
+  output$genres <- renderPlot(bg = "#191414", {
+    
+    if (input$person == "Daniel") {
+      df <- df_daniel
+    } else if (input$person == "Krzysiek") {
+      df <- df_krzysiek
+    } else {
+      df <- df_mikolaj
+    }
     
     
-    df <- df_mikolaj %>% 
+    df <- df %>% 
       group_by(genres) %>% 
       summarise(count = n()) %>% 
       arrange(-count) %>% 
@@ -198,25 +218,28 @@ server <- function(input, output){
       summarise(count = sum(count)) %>% 
       arrange(-count) %>% 
       filter(genres != "") %>% 
-      head(20)
+      head(30)
     
     
-    plot_ly(
-      type='treemap',
-      data=df,
-      labels=~genres,
-      parents=character(20),
-      values=~count,
-      domain=list(column=0)
-    ) %>% 
-    layout(
-      showlegend = FALSE,
-      plot_bgcolor  = "#121212",
-      paper_bgcolor = "#121212",
-      font = list(color="white")
-    ) %>% 
-    config(displayModeBar = FALSE)
+    wordcloud(df$genres, df$count, col = terrain.colors(length(df$genres)), bg = "#191414", scale = c(4, 1.5))
     
+    # 
+    # plot_ly(
+    #   type='treemap',
+    #   data=df,
+    #   labels=~genres,
+    #   parents=character(20),
+    #   values=~count,
+    #   domain=list(column=0)
+    # ) %>% 
+    # layout(
+    #   showlegend = FALSE,
+    #   plot_bgcolor  = "#191414",
+    #   paper_bgcolor = "#191414",
+    #   font = list(color="white")
+    # ) %>% 
+    # config(displayModeBar = FALSE)
+    # 
     
   })
   
@@ -236,54 +259,71 @@ server <- function(input, output){
       select(danceability, energy, acousticness, instrumentalness, speechiness, valence) %>% 
       lapply(., density, na.rm = TRUE)
       
-    
-
     feature_names <- names(density_df_daniel)
+    
+    
+    if (input$person == "Krzysiek") {
+      alpha_krzysiek <- 1
+      alpha_mikolaj <- 0.1
+      alpha_daniel <- 0.1
+    } else if (input$person == "Krzysiek") {
+      alpha_krzysiek <- 0.1
+      alpha_mikolaj <- 1
+      alpha_daniel <- 0.1
+    } else {
+      alpha_krzysiek <- 0.1
+      alpha_mikolaj <- 0.1
+      alpha_daniel <- 1
+    }
+    
+    
     plots <- lapply(feature_names, function(feature_n) {
-      plot_ly(
-        type = 'scatter',
-        mode = 'lines' 
-      ) %>%
-      add_trace(
-        x = density_df_krzysiek[[feature_n]][['x']],
-        y = density_df_krzysiek[[feature_n]][['y']],
-        color = 'red', 
-        name = 'Krzysiek'
-      ) %>% 
-      add_trace(
-        x = density_df_mikolaj[[feature_n]][['x']],
-        y = density_df_mikolaj[[feature_n]][['y']],
-        color = 'green', 
-        name = 'Mikołaj'
-      ) %>% 
-      add_trace(
-        x = density_df_daniel[[feature_n]][['x']],
-        y = density_df_daniel[[feature_n]][['y']],
-        color = 'blue', 
-        name = 'Daniel'
-      ) %>% 
-      layout(
-        xaxis = list(
-          tickvals = list(0, 0.5, 1),
-          title = feature_n
-        ),
-        yaxis = list(showticklabels = FALSE),
-        showlegend = FALSE,
-        plot_bgcolor  = "#121212",
-        paper_bgcolor = "#121212",
-        font = list(color="white")
-      ) %>% 
-      config(displayModeBar = FALSE)
+        plot_ly(
+          type = 'scatter',
+          mode = 'lines' 
+        ) %>% 
+        add_trace(
+          x = density_df_krzysiek[[feature_n]][['x']],
+          y = density_df_krzysiek[[feature_n]][['y']],
+          color = 'red', 
+          opacity = alpha_krzysiek,
+          name = 'Krzysiek'
+        ) %>% 
+        add_trace(
+          x = density_df_mikolaj[[feature_n]][['x']],
+          y = density_df_mikolaj[[feature_n]][['y']],
+          color = 'green', 
+          opacity = alpha_mikolaj,
+          name = 'Mikołaj'
+        ) %>% 
+        add_trace(
+          x = density_df_daniel[[feature_n]][['x']],
+          y = density_df_daniel[[feature_n]][['y']],
+          color = 'blue', 
+          opacity = alpha_daniel,
+          name = 'Daniel'
+        ) %>% 
+        layout(
+          xaxis = list(
+            tickvals = list(0, 0.5, 1),
+            title = feature_n
+          ),
+          yaxis = list(showticklabels = FALSE),
+          showlegend = FALSE,
+          plot_bgcolor  = "#191414",
+          paper_bgcolor = "#191414",
+          font = list(color="white")
+        ) %>% 
+        config(displayModeBar = FALSE)
+     
+     
+     
+     
     })
     firstRow <- subplot(plots[1:3], nrows = 1, titleX = TRUE) 
     secondRow <- subplot(plots[4:6], shareX = TRUE, nrows = 1, titleX = TRUE) 
     subplot(firstRow, secondRow, nrows = 2, titleX = TRUE, margin = 0.05) %>%
     config(displayModeBar = FALSE)
-    
-   
-    
-
-    
     
   })
   
@@ -315,9 +355,22 @@ server <- function(input, output){
         type = 'scatterpolar',
         mode = 'markers',
         fill = 'toself'
-        # fillcolor = 'rgba(101, 211, 110, 0.87)',
-        # marker = list(color = '#65a46e', size = 5)
     )
+    
+    if (input$person == "Krzysiek") {
+      alpha_krzysiek <- 0.7
+      alpha_mikolaj <- 0.5
+      alpha_daniel <- 0.5
+    } else if (input$person == "Krzysiek") {
+      alpha_krzysiek <- 0.5
+      alpha_mikolaj <- 0.7
+      alpha_daniel <- 0.5
+    } else {
+      alpha_krzysiek <- 0.5
+      alpha_mikolaj <- 0.5
+      alpha_daniel <- 0.7
+    }
+    
     
     fig <- fig %>% add_trace(
       data = radar_krzysiek,
@@ -325,7 +378,8 @@ server <- function(input, output){
       theta = ~feature,
       hovertemplate = paste("Feature: %{theta}<br>Value: %{r:.3f}<extra></extra>"),
       name = "Krzysiek",
-      fillcolor = "rgba(255, 0, 0, 0.5)"
+      fillcolor = "red",
+      opacity = alpha_krzysiek
     )
     
     fig <- fig %>% add_trace(
@@ -334,8 +388,8 @@ server <- function(input, output){
       theta = ~feature,
       hovertemplate = paste("Feature: %{theta}<br>Value: %{r:.3f}<extra></extra>"),
       name = "Mikołaj",
-      fillcolor = "rgba(0, 255, 0, 0.5)"
-      
+      fillcolor = "green",
+      opacity = alpha_mikolaj
     )
     
     fig <- fig %>% add_trace(
@@ -344,13 +398,13 @@ server <- function(input, output){
       theta = ~feature,
       hovertemplate = paste("Feature: %{theta}<br>Value: %{r:.3f}<extra></extra>"),
       name = "Daniel",
-      fillcolor = "rgba(0, 0, 255, 0.5)"
-      
+      fillcolor = "blue",
+      opacity = alpha_daniel
     )
     
     fig  %>%
       layout(
-        font = list(color = "#65D36E"),
+        font = list(color = "#1DB954"),
         plot_bgcolor  = "rgba(0, 0, 0, 0)",
         paper_bgcolor = "rgba(0, 0, 0, 0)",
         polar = list(
@@ -372,12 +426,55 @@ server <- function(input, output){
       config(displayModeBar = FALSE)
     
   })
+  
+  # output$genres_stream <- renderPlot({
+  #   
+  #   
+  #   df <- df_krzysiek
+  #   
+  #   top_genres <- df %>% 
+  #     mutate(genres = unify_genres(genres, genre_seeds)) %>% 
+  #     separate_rows(genres, sep = ", ") %>%
+  #     filter(genres != "") %>%
+  #     group_by(genres) %>% 
+  #     summarise(count = n()) %>% 
+  #     arrange(-count) %>% 
+  #     head(5) %>% 
+  #     pull(genres)
+  #   
+  #   
+  #   p <- df %>% 
+  #     mutate(date = as.Date(ts)) %>% 
+  #     filter(date > as.Date("2021-01-01") & date < as.Date("2021-12-31")) %>% 
+  #     mutate(genres = unify_genres(genres, genre_seeds)) %>% 
+  #     separate_rows(genres, sep = ", ") %>%
+  #     filter(genres != "") %>% 
+  #     group_by(date, genres) %>% 
+  #     summarise(ms_played = sum(ms_played), .groups = "drop") %>% 
+  #     filter(genres %in% top_genres) %>% 
+  #     ggplot(aes(date, ms_played, color = genres, fill = genres)) + 
+  #     geom_stream() +
+  #     scale_x_date(date_labels = "%b") + 
+  #     theme(
+  #       plot.background = element_rect(fill = "#191414", colour = "#191414"),
+  #       panel.background = element_blank(),
+  #       panel.border = element_rect(fill = NA, colour = NA),
+  #       panel.grid.major = element_blank(),
+  #       panel.grid.minor = element_blank(),
+  #       axis.text.y = element_blank(),
+  #       axis.text.x = element_text(colour = "#FFFFFF")
+  #       
+  #     ) 
+  #   
+  #   p
+  # })
 }
   
 
 
 
 ui1 <- fluidPage(
+  radioButtons("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj")),
   fluidRow(
     column(
       width = 6,
@@ -385,7 +482,7 @@ ui1 <- fluidPage(
     ),
     column(
       width = 6,
-      plotlyOutput("genres")
+      plotOutput("genres")
     )
   ),
   fluidRow(
@@ -396,7 +493,10 @@ ui1 <- fluidPage(
     column(
       width = 8,
       plotlyOutput("density_plot")
-    )
+    )#,
+    # fluidRow(
+    #   plotOutput("genres_stream", width = "100%", height = "30%")
+    # )
   )
 )
 
