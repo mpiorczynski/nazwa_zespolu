@@ -1,4 +1,5 @@
 library(shiny)
+library(gt)
 library(dplyr)
 library(ggplot2)
 library(shinycssloaders)
@@ -122,11 +123,42 @@ server <- function(input, output, session){
           summarise(MonthSum = sum(msPlayed)/60000)
         
         ggplot(df2,aes(x = endMonth, y = MonthSum))+
-          geom_col(fill = "#1ED760")
+          geom_col(fill = "#1ED760")+
+          theme(panel.background = element_rect(fill = "#444444"),
+                plot.background = element_rect(fill = "#444444"),
+                text = element_text(color = "#FFFFFF"),
+                axis.text = element_text(color = "#FFFFFF"),
+                legend.text = element_text(colour = "#FFFFFF"),
+                axis.ticks = element_blank(),
+                panel.grid.minor = element_blank(),
+                panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+                axis.title.y = element_blank(),
+                axis.title.x = element_text())
       }),
-      renderText(as.character("Favourite Tracks")),
-      renderTable(favSong)))
+      
+      br(),
+      render_gt({
+        gt(favSong) %>% 
+          tab_header(title = md("Favourite tracks")) %>% 
+          tab_style(
+            style = list(
+              cell_text(color = 'white'),
+              cell_fill(color = "#444444")
+            ),
+            locations = list(
+              cells_body(),
+              cells_title(),
+              cells_column_labels()
+              
+            )
+          )
+        
+        
+      })
+      
+      ))
     }
   })
   
 }
+

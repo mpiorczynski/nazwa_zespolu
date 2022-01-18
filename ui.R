@@ -3,6 +3,7 @@ library(dplyr)
 library(ggplot2)
 library(shinycssloaders)
 library(jsonlite)
+library(fresh)
 library(forcats)
 library(plotly)
 #data
@@ -82,7 +83,26 @@ app_ui <- navbarPage(
   tabPanel("Plot1", ui1),
   tabPanel("Plot2", ui2),
   tabPanel("Plot3", ui3),
-  theme = bslib::bs_theme(bootswatch = 'cosmo')
+  use_theme(
+    create_theme(
+      theme = "default",
+      bs_vars_navbar(
+        default_bg = "#444444",
+        default_color = "#FFFFFF",
+        default_link_color = "#FFFFFF",
+        default_link_active_color = "#75b8d1",
+        default_link_active_bg = "#000000",
+        default_link_hover_color = "firebrick"
+      ),
+      bs_vars_modal(
+        md = "60%",
+        backdrop_opacity = 0.7,
+        header_border_color = "#112446",
+        footer_border_color = "#112446",
+        content_bg = "#444444"
+      )
+    )
+  )
 )
 
 
