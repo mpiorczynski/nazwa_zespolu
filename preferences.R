@@ -5,6 +5,7 @@ library(plotly)
 library(jsonlite)
 library(tidyr)
 library(stringr)
+library(bslib)
 
 
 # data
@@ -153,7 +154,14 @@ unify_genres <- function(x, genre_seeds) {
   res
 }
 
-
+my_theme <- bs_theme(
+  bg = "#121212",
+  fg = "#FFFFFF",
+  primary = "#1CD155",
+  base_font = font_google("Proza Libre"),
+  heading_font = font_google("Proza Libre"),
+  code_font = font_google("Fira Code")
+)
 # ------------------------------------------------------------------------------
 
 server <- function(input, output){
@@ -161,7 +169,17 @@ server <- function(input, output){
   output$tempo_histogram <- renderPlot({
     df_daniel %>% 
       ggplot(aes(tempo)) + 
-      geom_histogram(binwidth = 4)
+      geom_histogram(binwidth = 4, fill = "#65d36e", alpha = 0.87) +
+      theme_dark() + 
+      theme(
+        plot.background = element_rect(fill = "#121212", colour = "#121212"),
+        panel.background = element_blank(),
+        panel.border = element_rect(fill = NA, colour = NA),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.y = element_blank()
+        
+      ) 
   })
   
   output$genres <- renderPlotly({
@@ -189,77 +207,164 @@ server <- function(input, output){
       labels=~genres,
       parents=character(20),
       values=~count,
-      domain=list(column=0))
+      domain=list(column=0)
+    ) %>% 
+    layout(
+      showlegend = FALSE,
+      plot_bgcolor  = "#121212",
+      paper_bgcolor = "#121212",
+      font = list(color="white")
+    ) %>% 
+    config(displayModeBar = FALSE)
+    
     
   })
   
   output$density_plot <- renderPlotly({
     
-    df <- df_krzysiek
-    p1 <- df %>% 
-      ggplot(aes(danceability)) + 
-      geom_density() + 
-      theme_bw()
     
-    p2 <- df %>% 
-      ggplot(aes(energy)) + 
-      geom_density() + 
-      theme_bw()
+    density_df_krzysiek <- df_krzysiek %>% 
+      select(danceability, energy, acousticness, instrumentalness, speechiness, valence) %>% 
+      lapply(., density, na.rm = TRUE)
     
-    p3 <- df %>% 
-      ggplot(aes(acousticness)) + 
-      geom_density() + 
-      theme_bw()
-    
-    p4 <- df %>% 
-      ggplot(aes(instrumentalness)) + 
-      geom_density() + 
-      theme_bw()
-    
-    p5 <- df %>% 
-    ggplot(aes(speechiness)) + 
-      geom_density() + 
-      theme_bw()
-    
-    p6 <- df %>% 
-      ggplot(aes(valence)) + 
-      geom_density() + 
-      theme_bw()
+    density_df_mikolaj <- df_mikolaj %>% 
+      select(danceability, energy, acousticness, instrumentalness, speechiness, valence) %>% 
+      lapply(., density, na.rm = TRUE)
     
     
-    subplot(
-      ggplotly(p1), 
-      ggplotly(p2), 
-      ggplotly(p3), 
-      ggplotly(p4), 
-      ggplotly(p5), 
-      ggplotly(p6),
-      nrows = 2
-    )
+    density_df_daniel <- df_daniel %>% 
+      select(danceability, energy, acousticness, instrumentalness, speechiness, valence) %>% 
+      lapply(., density, na.rm = TRUE)
+      
+    
+
+    feature_names <- names(density_df_daniel)
+    plots <- lapply(feature_names, function(feature_n) {
+      plot_ly(
+        type = 'scatter',
+        mode = 'lines' 
+      ) %>%
+      add_trace(
+        x = density_df_krzysiek[[feature_n]][['x']],
+        y = density_df_krzysiek[[feature_n]][['y']],
+        color = 'red', 
+        name = 'Krzysiek'
+      ) %>% 
+      add_trace(
+        x = density_df_mikolaj[[feature_n]][['x']],
+        y = density_df_mikolaj[[feature_n]][['y']],
+        color = 'green', 
+        name = 'Mikołaj'
+      ) %>% 
+      add_trace(
+        x = density_df_daniel[[feature_n]][['x']],
+        y = density_df_daniel[[feature_n]][['y']],
+        color = 'blue', 
+        name = 'Daniel'
+      ) %>% 
+      layout(
+        xaxis = list(
+          tickvals = list(0, 0.5, 1),
+          title = feature_n
+        ),
+        yaxis = list(showticklabels = FALSE),
+        showlegend = FALSE,
+        plot_bgcolor  = "#121212",
+        paper_bgcolor = "#121212",
+        font = list(color="white")
+      ) %>% 
+      config(displayModeBar = FALSE)
+    })
+    firstRow <- subplot(plots[1:3], nrows = 1, titleX = TRUE) 
+    secondRow <- subplot(plots[4:6], shareX = TRUE, nrows = 1, titleX = TRUE) 
+    subplot(firstRow, secondRow, nrows = 2, titleX = TRUE, margin = 0.05) %>%
+    config(displayModeBar = FALSE)
+    
+   
+    
+
+    
     
   })
   
   output$radar_plot <- renderPlotly({
-    df_mikolaj %>% 
+    radar_krzysiek <- df_krzysiek %>% 
       select(danceability, energy, speechiness, acousticness, instrumentalness, valence) %>% 
       pivot_longer(everything(), names_to = "feature", values_to = "value") %>% 
       group_by(feature) %>% 
       summarise(value = mean(value, na.rm = TRUE)) %>% 
-      arrange(factor(feature, c("danceability", "energy",  "acousticness", "instrumentalness", "speechiness", "valence"))) %>% 
-      plot_ly(
+      arrange(factor(feature, c("danceability", "energy",  "acousticness", "instrumentalness", "speechiness", "valence"))) 
+    
+    radar_mikolaj <- df_mikolaj %>% 
+      select(danceability, energy, speechiness, acousticness, instrumentalness, valence) %>% 
+      pivot_longer(everything(), names_to = "feature", values_to = "value") %>% 
+      group_by(feature) %>% 
+      summarise(value = mean(value, na.rm = TRUE)) %>% 
+      arrange(factor(feature, c("danceability", "energy",  "acousticness", "instrumentalness", "speechiness", "valence"))) 
+    
+    radar_daniel <- df_daniel %>% 
+      select(danceability, energy, speechiness, acousticness, instrumentalness, valence) %>% 
+      pivot_longer(everything(), names_to = "feature", values_to = "value") %>% 
+      group_by(feature) %>% 
+      summarise(value = mean(value, na.rm = TRUE)) %>% 
+      arrange(factor(feature, c("danceability", "energy",  "acousticness", "instrumentalness", "speechiness", "valence"))) 
+    
+    
+    
+    fig <- plot_ly(
         type = 'scatterpolar',
         mode = 'markers',
-        fill = 'toself',
-        r = ~value,
-        theta = ~feature,
-        hovertemplate = paste("Feature: %{theta}<br>Value: %{r}<extra></extra>"),
-        name = ""
-      ) %>%
+        fill = 'toself'
+        # fillcolor = 'rgba(101, 211, 110, 0.87)',
+        # marker = list(color = '#65a46e', size = 5)
+    )
+    
+    fig <- fig %>% add_trace(
+      data = radar_krzysiek,
+      r = ~value,
+      theta = ~feature,
+      hovertemplate = paste("Feature: %{theta}<br>Value: %{r:.3f}<extra></extra>"),
+      name = "Krzysiek",
+      fillcolor = "rgba(255, 0, 0, 0.5)"
+    )
+    
+    fig <- fig %>% add_trace(
+      data = radar_mikolaj,
+      r = ~value,
+      theta = ~feature,
+      hovertemplate = paste("Feature: %{theta}<br>Value: %{r:.3f}<extra></extra>"),
+      name = "Mikołaj",
+      fillcolor = "rgba(0, 255, 0, 0.5)"
+      
+    )
+    
+    fig <- fig %>% add_trace(
+      data = radar_daniel,
+      r = ~value,
+      theta = ~feature,
+      hovertemplate = paste("Feature: %{theta}<br>Value: %{r:.3f}<extra></extra>"),
+      name = "Daniel",
+      fillcolor = "rgba(0, 0, 255, 0.5)"
+      
+    )
+    
+    fig  %>%
       layout(
+        font = list(color = "#65D36E"),
+        plot_bgcolor  = "rgba(0, 0, 0, 0)",
+        paper_bgcolor = "rgba(0, 0, 0, 0)",
         polar = list(
+          bgcolor = "rgba(0, 0, 0, 0)",
           radialaxis = list(
             visible = T,
-            range = c(0, 1)
+            range = c(0,1),
+            gridcolor = "#FFFFFF",
+            color = "#FFFFFF",
+            tickfont = list(color = "#FFFFFF")
+          ),
+          angularaxis = list(
+            linecolor = "#FFFFFF",
+            tickfont = list(size = 14)
           )
         ),
         showlegend = F
@@ -267,8 +372,10 @@ server <- function(input, output){
       config(displayModeBar = FALSE)
     
   })
-  
 }
+  
+
+
 
 ui1 <- fluidPage(
   fluidRow(
@@ -283,12 +390,11 @@ ui1 <- fluidPage(
   ),
   fluidRow(
     column(
-      width = 6,
+      width = 4,
       plotlyOutput("radar_plot")
     ), 
     column(
-      width = 6,
-      h4("O jakich cechach najchętniej słuchamy muzyki"),
+      width = 8,
       plotlyOutput("density_plot")
     )
   )
@@ -304,7 +410,7 @@ app_ui <- navbarPage(
   tabPanel("Plot1", ui1),
   tabPanel("Plot2", ui2),
   tabPanel("Plot3", ui3),
-  theme = bslib::bs_theme(bootswatch = 'cosmo')
+  theme = my_theme
 )
 
 shinyApp(app_ui,server)
