@@ -17,12 +17,17 @@ features_df <- read.csv("data/krzysiek/tracks_features.csv")
 df_krzysiek <- left_join(streaming_history_df, features_df, by = "spotify_track_uri", keep = FALSE)
 
 streaming_history_df <- fromJSON("data/mikołaj/endsong.json")
+streaming_history_df <- streaming_history_df %>% 
+  mutate(ts = as.Date(ts)) %>% 
+  filter(ts > as.Date("2021-01-01"))
 features_df <- read.csv("data/mikołaj/tracks_features.csv")
 df_mikolaj <- left_join(streaming_history_df, features_df, by = "spotify_track_uri", keep = FALSE)
 
 streaming_history_df <- read.csv("data/daniel/endsong.csv")
 features_df <- read.csv("data/daniel/tracks_features.csv")
 df_daniel <- left_join(streaming_history_df, features_df, by = c("trackName" = "master_metadata_track_name"), keep = FALSE)
+
+
 
 
 # utils to genre plot 
@@ -266,7 +271,7 @@ server <- function(input, output){
       alpha_krzysiek <- 1
       alpha_mikolaj <- 0.1
       alpha_daniel <- 0.1
-    } else if (input$person == "Krzysiek") {
+    } else if (input$person == "Mikołaj") {
       alpha_krzysiek <- 0.1
       alpha_mikolaj <- 1
       alpha_daniel <- 0.1
@@ -361,7 +366,7 @@ server <- function(input, output){
       alpha_krzysiek <- 0.7
       alpha_mikolaj <- 0.5
       alpha_daniel <- 0.5
-    } else if (input$person == "Krzysiek") {
+    } else if (input$person == "Mikołaj") {
       alpha_krzysiek <- 0.5
       alpha_mikolaj <- 0.7
       alpha_daniel <- 0.5
