@@ -274,8 +274,7 @@ server <- function(input, output, session){
           column(2,
                  actionButton(inputId = "p2_reset",
                               label = "",
-                              icon = icon("backward"),
-                              style = "color: #444444; background-color: #1ED760; border-color: #888888")
+                              icon = icon("backward"))
           ),
           column(4,
                  uiOutput("p2_UI_time_input") 
@@ -325,6 +324,15 @@ app_ui <- navbarPage(
         header_border_color = "#112446",
         footer_border_color = "#112446",
         content_bg = "#444444"
+      ),
+      bs_vars_global(
+        body_bg = "#222222",
+        text_color = "#FFFFFF"
+      ),
+      bs_vars_button(
+        default_bg = "#1ED760",
+        default_color = "#FFFFFF",
+        default_border = "#88888888"
       )
     )
   )

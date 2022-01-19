@@ -100,6 +100,15 @@ app_ui <- navbarPage(
         header_border_color = "#112446",
         footer_border_color = "#112446",
         content_bg = "#444444"
+      ),
+      bs_vars_global(
+        body_bg = "#222222",
+        text_color = "#FFFFFF"
+      ),
+      bs_vars_button(
+        default_bg = "#1ED760",
+        default_color = "#FFFFFF",
+        default_border = "#88888888"
       )
     )
   )
