@@ -63,15 +63,28 @@ server <- function(input, output, session){
   })
   
   output$plot3 <- plotly::renderPlotly({
-    df1 <- streaming_history_df %>% 
-      group_by(artistName) %>% 
-      summarise(Time = sum(msPlayed)/60000) %>% 
+    
+    if(input$personPlot3 == "Mikołaj"){
+      df <- df_mikolaj
+    }
+    else if(input$personPlot3 == "Krzysiek"){
+      df <- df_krzysiek
+    }
+    else{
+      df <- df_daniel
+    }
+    
+    
+    
+    df1 <- df %>% 
+      group_by(master_metadata_album_artist_name) %>% 
+      summarise(Time = sum(ms_played)/60000) %>% 
       arrange(-Time) %>% 
       head(input$n) %>% 
-      mutate(artistName = fct_reorder(artistName, Time))
+      mutate(master_metadata_album_artist_name = fct_reorder(master_metadata_album_artist_name, Time))
     
     
-    p <- ggplot(df1,aes(x = Time, y = artistName))+
+    p <- ggplot(df1,aes(x = Time, y = master_metadata_album_artist_name))+
       geom_col(fill = "#1ED760")+
       theme(panel.background = element_rect(fill = "#444444"),
             plot.background = element_rect(fill = "#444444"),
@@ -83,21 +96,35 @@ server <- function(input, output, session){
             panel.grid.major = element_line(size = 0.3, colour = "#888888"),
             axis.title.y = element_blank(),
             axis.title.x = element_text())+
-      labs(title = "2021 - Favourite artists", x = "Minutes listened")
+      labs(title = "Favourite Artists", x = "Minutes listened")
     
     plotly::ggplotly(p, source = "1")
   })
   
   output$plot4 <- plotly::renderPlotly({
-    df1 <- streaming_history_df %>% 
-      group_by(artistName) %>% 
-      summarise(Time = sum(msPlayed)/60000) %>% 
+    
+    
+    if(input$personPlot3 == "Mikołaj"){
+      df <- df_mikolaj
+    }
+    else if(input$personPlot3 == "Krzysiek"){
+      df <- df_krzysiek
+    }
+    else {
+      df <- df_daniel
+    }
+    
+    
+    
+    df1 <- df %>% 
+      group_by(master_metadata_album_album_name) %>% 
+      summarise(Time = sum(ms_played)/60000) %>% 
       arrange(-Time) %>% 
       head(input$n) %>% 
-      mutate(artistName = fct_reorder(artistName, Time))
+      mutate(master_metadata_album_album_name = fct_reorder(master_metadata_album_album_name, Time))
     
     
-    p <- ggplot(df1,aes(x = Time, y = artistName))+
+    p <- ggplot(df1,aes(x = Time, y = master_metadata_album_album_name))+
       geom_col(fill = "#1ED760")+
       theme(panel.background = element_rect(fill = "#444444"),
             plot.background = element_rect(fill = "#444444"),
@@ -109,15 +136,72 @@ server <- function(input, output, session){
             panel.grid.major = element_line(size = 0.3, colour = "#888888"),
             axis.title.y = element_blank(),
             axis.title.x = element_text())+
-      labs(title = "2021 - Favourite albums", x = "Minutes listened")
+      labs(title = "Favourite albums", x = "Minutes listened")
     
     plotly::ggplotly(p, source = "2")
   })
   
   observeEvent(event_data("plotly_click", source = "2"), {
     if(input$id=="Plot3"){
-      batData = event_data("plotly_click", source = "2")
-      showModal(modalDialog(title = "elo"))
+      
+      if(input$personPlot3 == "Mikolaj"){
+        df <- df_mikolaj
+      }
+      else if(input$personPlot3 == "Krzysiek"){
+        df <- df_krzysiek
+      }
+      else{
+        df <- df_daniel
+      }
+      
+      
+      barData = event_data("plotly_click", source = "2")
+      
+      
+      df1 <- df %>% 
+        group_by(master_metadata_album_album_name) %>% 
+        summarise(Time = sum(ms_played)/60000) %>% 
+        arrange(-Time) %>% 
+        head(input$n) %>% 
+        mutate(master_metadata_album_album_name = fct_reorder(master_metadata_album_album_name, Time))
+      
+      artist <- df1[barData$pointNumber+1,1] %>% 
+        mutate(master_metadata_album_album_name = as.character(master_metadata_album_album_name))
+      
+      artist <- as.character(artist)
+      
+      favSong <- df %>% 
+        filter(master_metadata_album_album_name == artist) %>% 
+        group_by(master_metadata_track_name) %>% 
+        summarise(Sum = sum(ms_played)/60000) %>%
+        arrange(-Sum) %>% 
+        head(5)
+      colnames(favSong) <- c("Track Name", "Minutes Listened")
+      
+      
+      
+      
+      
+      showModal(modalDialog(title = , easyClose = TRUE,
+        render_gt({
+          gt(favSong) %>% 
+            tab_header(title = md("Favourite tracks on selected album")) %>% 
+            tab_style(
+              style = list(
+                cell_text(color = 'white'),
+                cell_fill(color = "#444444")
+              ),
+              locations = list(
+                cells_body(),
+                cells_title(),
+                cells_column_labels()
+                
+              )
+            )
+          
+          
+        })
+      ))
     }
     
   })
@@ -128,24 +212,34 @@ server <- function(input, output, session){
   observeEvent(event_data("plotly_click", source = "1"), {
     if(input$id == "Plot3"){
       
+      if(input$personPlot3 == "Mikolaj"){
+        df <- df_mikolaj
+      }
+      else if(input$personPlot3 == "Krzysiek"){
+        df <- df_krzysiek
+      }
+      else{
+        df <- df_daniel
+      }
+      
       barData = event_data("plotly_click", source = "1")
       
-      df1 <- streaming_history_df %>% 
-        group_by(artistName) %>% 
-        summarise(Time = sum(msPlayed)/60000) %>% 
+      df1 <- df %>% 
+        group_by(master_metadata_album_artist_name) %>% 
+        summarise(Time = sum(ms_played)/60000) %>% 
         arrange(-Time) %>% 
         head(input$n) %>% 
-        mutate(artistName = fct_reorder(artistName, Time))
+        mutate(master_metadata_album_artist_name = fct_reorder(master_metadata_album_artist_name, Time))
       
       artist <- df1[barData$pointNumber+1,1] %>% 
-        mutate(artistName = as.character(artistName))
+        mutate(master_metadata_album_artist_name = as.character(master_metadata_album_artist_name))
       
       artist <- as.character(artist)
       
-      favSong <- streaming_history_df %>% 
-        filter(artistName == artist) %>% 
-        group_by(trackName) %>% 
-        summarise(Sum = sum(msPlayed)/60000) %>%
+      favSong <- df %>% 
+        filter(master_metadata_album_artist_name == artist) %>% 
+        group_by(master_metadata_track_name) %>% 
+        summarise(Sum = sum(ms_played)/60000) %>%
         arrange(-Sum) %>% 
         head(5)
       colnames(favSong) <- c("Track Name", "Minutes Listened")
@@ -161,10 +255,14 @@ server <- function(input, output, session){
        
         
         
-        df2 <- dfDates %>% 
-          filter(artistName == artist) %>% 
+        df2 <- df %>% 
+          mutate(endTime = as.Date(ts)) %>% 
+          mutate(
+            endMonth = strftime(endTime, "%m")
+          ) %>% 
+          filter(master_metadata_album_artist_name == artist) %>% 
           group_by(endMonth) %>% 
-          summarise(MonthSum = sum(msPlayed)/60000)
+          summarise(MonthSum = sum(ms_played)/60000)
         
         df3 <- rbind(df2,df1)
         
@@ -179,11 +277,10 @@ server <- function(input, output, session){
                 panel.grid.minor = element_blank(),
                 panel.grid.major = element_line(size = 0.3, colour = "#888888"),
                 axis.title.y = element_blank(),
-                axis.title.x = element_text())
+                axis.title.x = element_text())+
+          labs(x = "Month", y = "Minutes played")
       }),
-      
-      renderTable(barData),
-      
+  
       br(),
       render_gt({
         gt(favSong) %>% 

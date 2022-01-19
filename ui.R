@@ -1,9 +1,11 @@
 library(shiny)
 library(dplyr)
 library(ggplot2)
+library(shinyjs)
 library(shinycssloaders)
 library(jsonlite)
 library(fresh)
+library(kit)
 library(forcats)
 library(gt)
 library(plotly)
@@ -62,8 +64,9 @@ ui2 <- fluidPage(
 #UI3
 
 ui3 <- fluidPage(
+  useShinyjs(),
   chooseSliderSkin("Flat", "#1ED760"),
-  titlePanel("Visualization 3."),
+  titlePanel("Visualization 3. - click bar for additional info"),
   sidebarLayout(
     sidebarPanel(
       sliderInput(
@@ -72,6 +75,12 @@ ui3 <- fluidPage(
         min = 5, 
         max = 15, 
         value = 10
+      ),
+      selectInput(
+        inputId = "personPlot3", 
+        label = "Select person: ", 
+        choices = c("Krzysiek", "Mikołaj", "Daniel"), 
+        selected = "Krzysiek"
       )
     ),
     mainPanel(
@@ -116,6 +125,7 @@ app_ui <- navbarPage(
     )
   )
 )
+
 
 
 
