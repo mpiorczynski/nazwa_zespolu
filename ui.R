@@ -19,6 +19,7 @@ dfDates <- streaming_history_df%>%
 #UI1
 
 ui1 <- fluidPage(
+  chooseSliderSkin("Flat", "#1ED760"),
   titlePanel("Visualization 1."),
   sidebarLayout(
     sidebarPanel(
@@ -39,6 +40,7 @@ ui1 <- fluidPage(
 #UI2
 
 ui2 <- fluidPage(
+  chooseSliderSkin("Flat", "#1ED760"),
   titlePanel("Visualization 2."),
   sidebarLayout(
     sidebarPanel(
@@ -59,6 +61,7 @@ ui2 <- fluidPage(
 #UI3
 
 ui3 <- fluidPage(
+  chooseSliderSkin("Flat", "#1ED760"),
   titlePanel("Visualization 3."),
   sidebarLayout(
     sidebarPanel(

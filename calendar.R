@@ -179,7 +179,7 @@ server <- function(input, output, session){
                 max_time),
       timeFormat = "%b %Y",
       width="100%"
-    ) 
+    )
   })
   
   output$p2_heatmap <- renderPlotly({
@@ -293,6 +293,7 @@ ui1 <- fluidPage()
 
 ui2 <- fluidPage(
   useShinyjs(),
+  chooseSliderSkin("Flat", "#1ED760"),
   
   titlePanel("Listening time analysis"),
     
