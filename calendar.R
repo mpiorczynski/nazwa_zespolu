@@ -80,7 +80,7 @@ server <- function(input, output, session){
       p <- ggplot(df, aes(x=hour*60*60 + min*60 + s,
                           color=person)) +
         geom_density(aes(weight=ms_played,
-                         text=paste("Person: ", person, "\nClick to see details."))) +
+                         text=paste("Person:", person, "\nClick to see details."))) +
         scale_y_continuous(name="") +
         scale_x_continuous(name = "Hour",
                            breaks = (0:8)*60*60*3,
@@ -104,11 +104,11 @@ server <- function(input, output, session){
         config(displayModeBar=FALSE)
     }
     else{
-      p2_person <- c("daniel", "krzysiek", "mikolaj")[p2_ed$curveNumber + 1]
-      if(p2_person == "daniel"){
+      p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
+      if(p2_person == "Daniel"){
         df <- df_daniel
       }
-      else if(p2_person == "mikolaj"){
+      else if(p2_person == "Mikołaj"){
         df <- df_mikolaj
       }
       else {
@@ -118,7 +118,8 @@ server <- function(input, output, session){
       df$platform <- factor(df$platform, levels = c("PC", "Phone", "Other"))
       
       p <- ggplot(df, aes(x=hour*60*60 + min*60 + s, y=..count../2000, color=platform)) +
-        geom_density(aes(weight=ms_played)) +
+        geom_density(aes(weight=ms_played,
+                         text = paste("Device:", platform))) +
         scale_y_continuous(name="") +
         scale_x_continuous(name = "Hour",
                            breaks = (0:8)*60*60*3,
@@ -137,7 +138,7 @@ server <- function(input, output, session){
               axis.title.x = element_text()) +
         labs(colour = "Device")
       
-      ggplotly(p, source = "p2_density") %>%
+      ggplotly(p, source = "p2_density", tooltip = "text") %>%
         layout(yaxis = list(ticks="", showticklabels=FALSE)) %>% 
         config(displayModeBar=FALSE)
     }
@@ -152,7 +153,7 @@ server <- function(input, output, session){
                       .id="person")
     }
     else{
-      p2_person <- c("daniel", "krzysiek", "mikolaj")[p2_ed$curveNumber + 1]
+      p2_person <- c("Daniel", "Krzysiek", "Mikolaj")[p2_ed$curveNumber + 1]
       if(p2_person == "Daniel"){
         df <- df_daniel
       }
@@ -173,13 +174,14 @@ server <- function(input, output, session){
       max = max_time,
       value = c(min_time,
                 max_time),
-      timeFormat = "%b %Y"
-    )
+      timeFormat = "%b %Y",
+      width="100%"
+    ) 
   })
   
   output$p2_heatmap <- renderPlotly({
     p2_ed <- event_data("plotly_click", source="p2_comp")
-    p2_person <- c("daniel", "krzysiek", "mikolaj")[p2_ed$curveNumber + 1]
+    p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
     if(p2_person == "Daniel"){
       df <- df_daniel
     }
@@ -206,9 +208,9 @@ server <- function(input, output, session){
       geom_tile(aes(x=weekday,
                     y=hour,
                     fill=z,
-                    text=paste("Day: ", wdays[weekday],
-                               "\nTime: ", hours[hour],
-                               "\nTotal listening time: ",
+                    text=paste("Day:", wdays[weekday],
+                               "\nTime:", hours[hour],
+                               "\nTotal listening time:",
                                strftime(
                                  as.POSIXlt.numeric(z/1000,
                                                     format="%OS",
@@ -242,17 +244,41 @@ server <- function(input, output, session){
       config(displayModeBar=FALSE)
   })
   
-  output$p2_debug <- renderPrint(
-    input$p2_time
-  )
-  
-  output$p2_UI_heatmap <- renderUI({
+  output$p2_UI <- renderUI({
+    
     p2_ed <- event_data("plotly_click", source="p2_comp")
-    if(is.null(p2_ed)){
-      p("Click on the graph to choose a person and see their heatmap.")
-    }
-    else{
-      plotlyOutput("p2_heatmap")
+    if(is.null(p2_ed)) { tagList(
+      h4("What time of the day do we listen to music?"),
+      plotlyOutput("p2_density"),
+      uiOutput("p2_UI_time_input") 
+    )}
+    else {
+      p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
+      tagList(
+        fluidRow(
+          column(6,
+                 h4(paste("What time of the day does", p2_person, "listen to music?")),
+                 plotlyOutput("p2_density")
+          ),
+          
+          column(6,
+                 h4(paste("Wahat time of the week does", p2_person, "listen to music?")),
+                 plotlyOutput("p2_heatmap")
+          )
+        ),
+        
+        fluidRow(
+          column(2,
+                 actionButton(inputId = "p2_reset",
+                              label = "",
+                              icon = icon("backward"),
+                              style = "color: #444444; background-color: #1ED760; border-color: #888888")
+          ),
+          column(4,
+                 uiOutput("p2_UI_time_input") 
+          )
+        ) 
+      )
     }
   })
   
@@ -266,30 +292,9 @@ ui1 <- fluidPage()
 ui2 <- fluidPage(
   useShinyjs(),
   
-  titlePanel("Visualization 2."),
+  titlePanel("Listening time analysis"),
     
-  fluidRow(
-    column(6,
-           h4("O której godzinie słuchamy muzyki?"),
-           plotlyOutput("p2_density")
-    ),
-    
-    column(6,
-           h4("Kiedy w tygodniu słuchamy muzyki?"),
-           uiOutput("p2_UI_heatmap")
-    )
-  ),
-  
-  fluidRow(
-    column(2,
-           actionButton(inputId = "p2_reset",
-                        label = "",
-                        icon = icon("backward"))
-    ),
-    column(4,
-           uiOutput("p2_UI_time_input") 
-    )
-  )
+  uiOutput("p2_UI")
 )
 
 ui3 <- fluidPage()  
@@ -300,7 +305,26 @@ app_ui <- navbarPage(
   tabPanel("Plot1", ui1),
   tabPanel("Plot2", ui2),
   tabPanel("Plot3", ui3),
-  theme = bslib::bs_theme(bootswatch = 'cosmo')
+  use_theme(
+    create_theme(
+      theme = "default",
+      bs_vars_navbar(
+        default_bg = "#444444",
+        default_color = "#FFFFFF",
+        default_link_color = "#FFFFFF",
+        default_link_active_color = "#75b8d1",
+        default_link_active_bg = "#000000",
+        default_link_hover_color = "firebrick"
+      ),
+      bs_vars_modal(
+        md = "60%",
+        backdrop_opacity = 0.7,
+        header_border_color = "#112446",
+        footer_border_color = "#112446",
+        content_bg = "#444444"
+      )
+    )
+  )
 )
 
 shinyApp(app_ui,server)
