@@ -17,9 +17,6 @@ features_df <- read.csv("data/krzysiek/tracks_features.csv")
 df_krzysiek <- left_join(streaming_history_df, features_df, by = "spotify_track_uri", keep = FALSE)
 
 streaming_history_df <- fromJSON("data/mikołaj/endsong.json")
-streaming_history_df <- streaming_history_df %>% 
-  mutate(ts = as.Date(ts)) %>% 
-  filter(ts > as.Date("2021-01-01"))
 features_df <- read.csv("data/mikołaj/tracks_features.csv")
 df_mikolaj <- left_join(streaming_history_df, features_df, by = "spotify_track_uri", keep = FALSE)
 
