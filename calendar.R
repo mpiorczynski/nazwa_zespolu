@@ -297,7 +297,11 @@ server <- function(input, output, session){
     
     p <- ggplot(df) +
       geom_col(aes(x=group,
-                   y=ms_played), fill = "#1ED760") +
+                   y=ms_played,
+                   text=paste(
+                     "Total listening time:",
+                     p2_tick_labs(ms_played)
+                   )), fill = "#1ED760") +
       theme(panel.background = element_rect(fill = "#444444"),
             plot.background = element_rect(fill = "#444444"),
             text = element_text(color = "#FFFFFF"),
@@ -317,7 +321,7 @@ server <- function(input, output, session){
         scale_x_discrete(breaks = paste(str_pad(1:12, 2, pad="0"), rep("15", 12)),
                          labels = mnames2)
     }
-    ggplotly(p, source = "p2_barplot_time", tooltip = NULL) %>% 
+    ggplotly(p, source = "p2_barplot_time", tooltip = "text") %>% 
       config(displayModeBar=FALSE) %>% 
       layout(yaxis = list(fixedrange=TRUE))
   })
