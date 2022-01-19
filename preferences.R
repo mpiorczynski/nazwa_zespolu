@@ -9,6 +9,7 @@ library(bslib)
 library(wordcloud)
 library(wordcloud2)
 library(ggstream)
+library(shinydashboard)
 
 
 # data
@@ -160,12 +161,9 @@ unify_genres <- function(x, genre_seeds) {
 }
 
 my_theme <- bs_theme(
-  bg = "#191414",
+  bg = "#121212",
   fg = "#FFFFFF",
-  primary = "#1CD155",
-  base_font = font_google("Proza Libre"),
-  heading_font = font_google("Proza Libre"),
-  code_font = font_google("Fira Code")
+  primary = "#1DB954",
 )
 # ------------------------------------------------------------------------------
 
@@ -185,18 +183,21 @@ server <- function(input, output){
       ggplot(aes(tempo)) + 
       geom_histogram(binwidth = 4, fill = "#1DB954", alpha = 0.87) +
       theme_dark() + 
+      xlab("") + 
+      ylab("") + 
       theme(
-        plot.background = element_rect(fill = "#191414", colour = "#191414"),
+        plot.background = element_rect(fill = "#121212", colour = "#121212"),
         panel.background = element_blank(),
         panel.border = element_rect(fill = NA, colour = NA),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        axis.text.y = element_blank()
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(colour = "#FFFFFF")
         
       ) 
   })
   
-  output$genres <- renderPlot(bg = "#191414", {
+  output$genres <- renderPlot(bg = "#121212", {
     
     if (input$person == "Daniel") {
       df <- df_daniel
@@ -223,7 +224,7 @@ server <- function(input, output){
       head(30)
     
     
-    wordcloud(df$genres, df$count, col = terrain.colors(length(df$genres)), bg = "#191414", scale = c(4, 1.5))
+    wordcloud(df$genres, df$count, col = terrain.colors(length(df$genres)), bg = "#121212", scale = c(4, 1.5))
     
     # 
     # plot_ly(
@@ -236,8 +237,8 @@ server <- function(input, output){
     # ) %>% 
     # layout(
     #   showlegend = FALSE,
-    #   plot_bgcolor  = "#191414",
-    #   paper_bgcolor = "#191414",
+    #   plot_bgcolor  = "#121212",
+    #   paper_bgcolor = "#121212",
     #   font = list(color="white")
     # ) %>% 
     # config(displayModeBar = FALSE)
@@ -312,8 +313,8 @@ server <- function(input, output){
           ),
           yaxis = list(showticklabels = FALSE),
           showlegend = FALSE,
-          plot_bgcolor  = "#191414",
-          paper_bgcolor = "#191414",
+          plot_bgcolor  = "#121212",
+          paper_bgcolor = "#121212",
           font = list(color="white")
         ) %>% 
         config(displayModeBar = FALSE)
@@ -458,7 +459,7 @@ server <- function(input, output){
   #     geom_stream() +
   #     scale_x_date(date_labels = "%b") + 
   #     theme(
-  #       plot.background = element_rect(fill = "#191414", colour = "#191414"),
+  #       plot.background = element_rect(fill = "#121212", colour = "#121212"),
   #       panel.background = element_blank(),
   #       panel.border = element_rect(fill = NA, colour = NA),
   #       panel.grid.major = element_blank(),
@@ -475,45 +476,186 @@ server <- function(input, output){
 
 
 
-ui1 <- fluidPage(
-  radioButtons("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj")),
-  fluidRow(
-    column(
-      width = 6,
-      plotOutput("tempo_histogram")
+# ui1 <- fluidRow(
+#   fluidRow(
+#     column( 
+#       width = 6,
+#       plotOutput("tempo_histogram")
+#     ),
+#     column(
+#       width = 6,
+#       box(
+#         plotOutput("genres")
+#       )
+#     )
+#   ),
+#   fluidRow(
+#     column(
+#       width = 4,
+#       plotlyOutput("radar_plot")
+#     ),
+#     column(
+#       width = 8,
+#       plotlyOutput("density_plot")
+#     )#,
+#     # fluidRow(
+#     #   plotOutput("genres_stream", width = "100%", height = "30%")
+#     # )
+#   )
+# )
+
+
+
+# 
+# ui1 <- fluidPage(
+#   radioButtons("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj")),
+#   fluidRow(
+#     column(
+#       width = 6,
+#       plotOutput("tempo_histogram")
+#     ),
+#     column(
+#       width = 6,
+#       plotOutput("genres")
+#     )
+#   ),
+#   fluidRow(
+#     column(
+#       width = 4,
+#       plotlyOutput("radar_plot")
+#     ), 
+#     column(
+#       width = 8,
+#       plotlyOutput("density_plot")
+#     )#,
+#     # fluidRow(
+#     #   plotOutput("genres_stream", width = "100%", height = "30%")
+#     # )
+#   )
+# )
+# 
+# ui2 <- fluidPage()
+# 
+# ui3 <- fluidPage()
+# 
+# app_ui <- navbarPage(
+#   id = "id",
+#   title = "Prototype",
+#   tabPanel("Plot1", ui1),
+#   tabPanel("Plot2", ui2),
+#   tabPanel("Plot3", ui3),
+#   theme = my_theme
+# )
+# 
+
+
+
+app_ui <- dashboardPage(
+  title = "SpotifyViz",
+  dashboardHeader(title = tags$a(img(src='Spotify_Logo_RGB_Green.png', style = "width: 131px; background-color: #040404"))), 
+  dashboardSidebar(
+    width = "230px",
+    sidebarMenu(
+      menuItem("Home", tabName = "home"),
+      menuItem("Activity", tabName = "activity"),
+      menuItem("Preferences", tabName = "preferences")
     ),
-    column(
-      width = 6,
-      plotOutput("genres")
-    )
+    radioButtons("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj"))
   ),
-  fluidRow(
-    column(
-      width = 4,
-      plotlyOutput("radar_plot")
-    ), 
-    column(
-      width = 8,
-      plotlyOutput("density_plot")
-    )#,
-    # fluidRow(
-    #   plotOutput("genres_stream", width = "100%", height = "30%")
-    # )
+  dashboardBody(
+    tags$head(tags$style(HTML('
+      .main-sidebar .sidebar .sidebar-menu {
+        width: 230px;
+        height: 100%;
+        background-color: #040404;
+      }
+      
+      html {
+        font-size: 16px;
+      }
+      
+      .content-wrapper .content {
+          background-color: #121212;
+      }
+      
+      * {
+          font-family: "Open Sans", sans-serif;
+          letter-spacing: -0.35px;
+      } 
+      
+      .skin-blue .main-header .navbar {
+        background-color: #040404;
+      }       
+      
+      skin-blue .main-sidebar {
+        background-color: #040404;
+      }
+      
+      .box .box-body {
+        background-color: #121212;
+        -webkit-box-shadow: none; 
+        -moz-box-shadow: none;
+        box-shadow: none;
+      }
+      
+      .logo {
+        background-color:  #040404 !important;
+      }
+      .navbar {
+        background-color:  #040404 !important;
+      }
+      
+      .radio {
+        font-weight: normal;
+        background-color: #040404;
+      }
+      
+      .control-label {
+        font-weight: normal;
+      }
+      .shiny-bound-input {
+        background-color: #040404;
+
+      }
+      
+      #sidebarCollapsed { 
+        background-color: #040404;
+      }
+      
+      
+      .skin-blue .main-sidebar .sidebar .sidebar-menu  a{
+        border-radius: 5px;
+        border-color: transparent;
+      }
+      
+      .skin-blue .main-header .navbar .sidebar-toggle:hover {
+          background-color: #1DB954;
+      }
+      
+    
+
+    '))),
+    tabItems(
+      tabItem(tabName = "preferences",
+              fluidRow(
+                box(plotOutput("tempo_histogram"), background = "red"),
+                box(plotOutput("genres"), background = "red")
+              ), 
+              fluidRow(
+                box(plotlyOutput("radar_plot"), width = 4, background = "red"),
+                box(plotlyOutput("density_plot"), width = 8, background = "red")  
+              )
+              
+      ),
+      tabItem(tabName = "home",
+              h2("No tab content")
+      ),
+      tabItem(tabName = "activity",
+              h2("No tab content")
+      )
+    )
   )
 )
 
-ui2 <- fluidPage()
-
-ui3 <- fluidPage()
-
-app_ui <- navbarPage(
-  id = "id",
-  title = "Prototype",
-  tabPanel("Plot1", ui1),
-  tabPanel("Plot2", ui2),
-  tabPanel("Plot3", ui3),
-  theme = my_theme
-)
-
-shinyApp(app_ui,server)
+shinyApp(app_ui, server)
 
