@@ -5,6 +5,7 @@ library(shinycssloaders)
 library(jsonlite)
 library(fresh)
 library(forcats)
+library(gt)
 library(plotly)
 #data
 streaming_history_df <- fromJSON("data/mikołaj/StreamingHistory0.json")
@@ -74,8 +75,7 @@ ui3 <- fluidPage(
       )
     ),
     mainPanel(
-      plotly::plotlyOutput("plot3"),
-      width = 9
+      fluidRow(column(6, plotly::plotlyOutput("plot3")),column(6, plotly::plotlyOutput("plot4")))
     )
   )
 )

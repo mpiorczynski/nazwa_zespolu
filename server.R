@@ -85,13 +85,50 @@ server <- function(input, output, session){
             axis.title.x = element_text())+
       labs(title = "2021 - Favourite artists", x = "Minutes listened")
     
-    plotly::ggplotly(p)
+    plotly::ggplotly(p, source = "1")
   })
   
-  observeEvent(event_data("plotly_click"), {
+  output$plot4 <- plotly::renderPlotly({
+    df1 <- streaming_history_df %>% 
+      group_by(artistName) %>% 
+      summarise(Time = sum(msPlayed)/60000) %>% 
+      arrange(-Time) %>% 
+      head(input$n) %>% 
+      mutate(artistName = fct_reorder(artistName, Time))
+    
+    
+    p <- ggplot(df1,aes(x = Time, y = artistName))+
+      geom_col(fill = "#1ED760")+
+      theme(panel.background = element_rect(fill = "#444444"),
+            plot.background = element_rect(fill = "#444444"),
+            text = element_text(color = "#FFFFFF"),
+            axis.text = element_text(color = "#FFFFFF"),
+            legend.text = element_text(colour = "#FFFFFF"),
+            axis.ticks = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+            axis.title.y = element_blank(),
+            axis.title.x = element_text())+
+      labs(title = "2021 - Favourite albums", x = "Minutes listened")
+    
+    plotly::ggplotly(p, source = "2")
+  })
+  
+  observeEvent(event_data("plotly_click", source = "2"), {
+    if(input$id=="Plot3"){
+      batData = event_data("plotly_click", source = "2")
+      showModal(modalDialog(title = "elo"))
+    }
+    
+  })
+  
+  
+  
+  
+  observeEvent(event_data("plotly_click", source = "1"), {
     if(input$id == "Plot3"){
       
-      barData = event_data("plotly_click")
+      barData = event_data("plotly_click", source = "1")
       
       df1 <- streaming_history_df %>% 
         group_by(artistName) %>% 
@@ -115,14 +152,23 @@ server <- function(input, output, session){
       
       
       
-      showModal(modalDialog(title = "Bar info", renderPlot({
+      showModal(modalDialog(easyClose = TRUE, title = tags$a(style = "color: white", icon('robot'), br(), as.character(artist)), renderPlot({
+        
+        endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
+        MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
+        
+        df1 <- data.frame(endMonth, MonthSum)
+       
+        
         
         df2 <- dfDates %>% 
           filter(artistName == artist) %>% 
           group_by(endMonth) %>% 
           summarise(MonthSum = sum(msPlayed)/60000)
         
-        ggplot(df2,aes(x = endMonth, y = MonthSum))+
+        df3 <- rbind(df2,df1)
+        
+        ggplot(df3,aes(x = endMonth, y = MonthSum))+
           geom_col(fill = "#1ED760")+
           theme(panel.background = element_rect(fill = "#444444"),
                 plot.background = element_rect(fill = "#444444"),
@@ -135,6 +181,8 @@ server <- function(input, output, session){
                 axis.title.y = element_blank(),
                 axis.title.x = element_text())
       }),
+      
+      renderTable(barData),
       
       br(),
       render_gt({
