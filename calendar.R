@@ -14,6 +14,10 @@ library(fresh)
 # data
 wdays <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 wdays2 <- c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+mnames <- c("January", "February", "March", "April",
+            "May", "June", "July", "August",
+            "September", "October", "November", "December")
+mnames2 <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 hours <- sprintf("%02d:00-%02d:00", 0:23, 1:24)
 p2_ed <- NULL
 
@@ -103,7 +107,8 @@ server <- function(input, output, session){
         labs(colour = "Person")
       
       ggplotly(p, source = "p2_comp", tooltip="text") %>%
-        layout(yaxis = list(ticks="", showticklabels=FALSE)) %>% 
+        layout(yaxis = list(ticks="", showticklabels=FALSE, fixedrange=TRUE),
+               xaxis = list(fixedrange=TRUE)) %>% 
         config(displayModeBar=FALSE)
     }
     else{
@@ -142,7 +147,8 @@ server <- function(input, output, session){
         labs(colour = "Device")
       
       ggplotly(p, source = "p2_density", tooltip = "text") %>%
-        layout(yaxis = list(ticks="", showticklabels=FALSE)) %>% 
+        layout(yaxis = list(ticks="", showticklabels=FALSE, fixedrange=TRUE),
+               xaxis = list(fixedrange=TRUE)) %>% 
         config(displayModeBar=FALSE)
     }
   })
@@ -170,15 +176,18 @@ server <- function(input, output, session){
     min_time <- min(df$ts)
     max_time <- max(df$ts)
     
-    sliderInput(
-      inputId = "p2_time",
-      label = "Select time period:",
-      min = min_time,
-      max = max_time,
-      value = c(min_time,
-                max_time),
-      timeFormat = "%b %Y",
-      width="100%"
+    tagList(
+      h5("Select time period:"),
+      sliderInput(
+        inputId = "p2_time",
+        label = NULL,
+        min = min_time,
+        max = max_time,
+        value = c(min_time,
+                  max_time),
+        timeFormat = "%b %Y",
+        width="100%"
+      ) 
     )
   })
   
@@ -244,7 +253,62 @@ server <- function(input, output, session){
            fill = "")
     
     ggplotly(p, source="p2_tile", tooltip="text") %>% 
-      config(displayModeBar=FALSE)
+      config(displayModeBar=FALSE) %>% 
+      layout(yaxis = list(fixedrange=TRUE),
+             xaxis = list(fixedrange=TRUE))
+  })
+  
+  output$p2_bar <- renderPlotly({
+    p2_ed <- event_data("plotly_click", source="p2_comp")
+    p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
+    if(p2_person == "Daniel"){
+      df <- df_daniel
+    }
+    else if(p2_person == "Mikołaj"){
+      df <- df_mikolaj
+    }
+    else {
+      df <- df_krzysiek
+    }
+    df <- df %>% 
+      select(ts, ms_played) %>% 
+      mutate(date = as.Date(ts)) %>% 
+      filter(date >= as.Date("2021-01-01")) %>% 
+      group_by(group = format(date, input$p2_buckets)) %>% 
+      summarise(ms_played = sum(ms_played, na.rm=TRUE))
+    
+    p2_tick_labs <- function(x) paste(floor(x/(1000*60*60)),
+                                      "h",
+                                      floor(x/(1000*60) - 60*floor(x/(1000*60*60))),
+                                      "min")
+    
+    p <- ggplot(df) +
+      geom_col(aes(x = group, y = ms_played), fill = "#1ED760") +
+      theme(panel.background = element_rect(fill = "#444444"),
+            plot.background = element_rect(fill = "#444444"),
+            text = element_text(color = "#FFFFFF"),
+            axis.text = element_text(color = "#FFFFFF"),
+            legend.text = element_text(colour = "#FFFFFF"),
+            axis.ticks = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.grid.major = element_line(size = 0.3, colour = "#888888")) +
+      scale_y_continuous(labels=p2_tick_labs) +
+      labs(y = "Total listening time")
+    if(input$p2_buckets == "%m") {
+      p <- p + 
+        scale_x_discrete(breaks = str_pad(1:12, 2, pad="0"), labels=mnames2) +
+        labs(x = "Month")
+    }
+    else {
+      p <- p +
+        #scale_x_discrete(breaks = str_pad(floor(seq(from = 1,
+        #                                            to = 365,
+        #                                            length.out = 12)), 2, pad="0")) +
+        labs(x = "Day")
+    }
+    ggplotly(p, source = "p2_barplot_time") %>% 
+      config(displayModeBar=FALSE) %>% 
+      layout(yaxis = list(fixedrange=TRUE))
   })
   
   output$p2_UI <- renderUI({
@@ -258,6 +322,8 @@ server <- function(input, output, session){
     else {
       p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
       tagList(
+        
+        
         fluidRow(
           column(6,
                  h4(paste("What time of the day does", p2_person, "listen to music?")),
@@ -270,16 +336,39 @@ server <- function(input, output, session){
           )
         ),
         
+        br(),
+        
         fluidRow(
-          column(2,
+          column(width = 3,
+            h5("Barplot controls:"),
+            br(),
+            radioButtons(
+              inputId = "p2_buckets",
+              label = "",
+              choices = c("Month" = "%m",
+                          "Day" = "%m %d"),
+              selected = "%m",
+              width = "100%",
+              inline = TRUE
+            )
+          ),
+          column(width = 3,
+                 h5("Return:"),
+                 br(),
                  actionButton(inputId = "p2_reset",
                               label = "",
-                              icon = icon("backward"))
+                              icon = icon("backward"),
+                              width = "100%")
           ),
-          column(4,
-                 uiOutput("p2_UI_time_input") 
+          column(width = 6,
+                 uiOutput("p2_UI_time_input")
           )
-        ) 
+        ),
+        
+        fluidRow(
+          h4(paste(p2_person, "'s listening time last year", sep="")),
+          withSpinner(plotlyOutput("p2_bar"), color="#1ED760", type=4)
+        )
       )
     }
   })
