@@ -252,7 +252,7 @@ server <- function(input, output, session){
     p2_ed <- event_data("plotly_click", source="p2_comp")
     if(is.null(p2_ed)) { tagList(
       h4("What time of the day do we listen to music?"),
-      plotlyOutput("p2_density"),
+      withSpinner(plotlyOutput("p2_density"), color="#1ED760", type=4),
       uiOutput("p2_UI_time_input") 
     )}
     else {
@@ -261,12 +261,12 @@ server <- function(input, output, session){
         fluidRow(
           column(6,
                  h4(paste("What time of the day does", p2_person, "listen to music?")),
-                 plotlyOutput("p2_density")
+                 withSpinner(plotlyOutput("p2_density"), color="#1ED760", type=4)
           ),
           
           column(6,
                  h4(paste("What time of the week does", p2_person, "listen to music?")),
-                 plotlyOutput("p2_heatmap")
+                 withSpinner(plotlyOutput("p2_heatmap"), color="#1ED760", type=4)
           )
         ),
         
