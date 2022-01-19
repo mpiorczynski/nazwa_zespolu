@@ -21,6 +21,14 @@ mnames2 <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct
 hours <- sprintf("%02d:00-%02d:00", 0:23, 1:24)
 p2_ed <- NULL
 
+all_days <- c()
+for (i in 1:12) {
+  all_days <- c(all_days,
+                paste(str_pad(i, 2, pad="0"),
+                      str_pad(1:(c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[i]), 2, pad="0")))
+}
+df_p2_bar <- data.frame(group = all_days, ms_played = rep(0, 365))
+
 
 df_mikolaj <- fromJSON("data/mikołaj/endsong.json") %>% 
   select(ts,
@@ -277,6 +285,10 @@ server <- function(input, output, session){
       group_by(group = format(date, input$p2_buckets)) %>% 
       summarise(ms_played = sum(ms_played, na.rm=TRUE))
     
+    df <- df_p2_bar %>% 
+      merge(df, by = "group", all.x=TRUE) %>% 
+      mutate(ms_played = ifelse(is.na(ms_played), 0, ms_played))
+    
     p2_tick_labs <- function(x) paste(floor(x/(1000*60*60)),
                                       "h",
                                       floor(x/(1000*60) - 60*floor(x/(1000*60*60))),
@@ -293,18 +305,15 @@ server <- function(input, output, session){
             panel.grid.minor = element_blank(),
             panel.grid.major = element_line(size = 0.3, colour = "#888888")) +
       scale_y_continuous(labels=p2_tick_labs) +
-      labs(y = "Total listening time")
+      labs(y = "Total listening time", x = "Month")
     if(input$p2_buckets == "%m") {
       p <- p + 
-        scale_x_discrete(breaks = str_pad(1:12, 2, pad="0"), labels=mnames2) +
-        labs(x = "Month")
+        scale_x_discrete(breaks = str_pad(1:12, 2, pad="0"), labels=mnames2)
     }
     else {
       p <- p +
-        #scale_x_discrete(breaks = str_pad(floor(seq(from = 1,
-        #                                            to = 365,
-        #                                            length.out = 12)), 2, pad="0")) +
-        labs(x = "Day")
+        scale_x_discrete(breaks = paste(str_pad(1:12, 2, pad="0"), rep("15", 12)),
+                         labels = mnames2)
     }
     ggplotly(p, source = "p2_barplot_time") %>% 
       config(displayModeBar=FALSE) %>% 
