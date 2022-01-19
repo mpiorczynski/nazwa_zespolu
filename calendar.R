@@ -9,11 +9,14 @@ library(shinyWidgets)
 library(plotly)
 library(shinyjs)
 library(kit)
+library(fresh)
 
 # data
-wdays <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Sturday")
+wdays <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+wdays2 <- c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
 hours <- sprintf("%02d:00-%02d:00", 0:23, 1:24)
 p2_ed <- NULL
+
 
 df_mikolaj <- fromJSON("data/mikołaj/endsong.json") %>% 
   select(ts,
@@ -218,7 +221,7 @@ server <- function(input, output, session){
                                  format="%H:%M:%OS"))),
                 color = "#444444", #powinny być przerwy między kafelkami
                 lwd = 1) +         #ale plotly nie dziła :(((
-      scale_x_continuous(breaks=1:7, labels=wdays) +
+      scale_x_continuous(breaks=1:7, labels=wdays2) +
       scale_y_reverse(breaks=0:23, labels=hours) +
       scale_fill_gradient(high = "#1ED760",
                           low = "black",
@@ -227,7 +230,7 @@ server <- function(input, output, session){
       theme(panel.background = element_rect(fill = "#444444"),
             plot.background = element_rect(fill = "#444444"),
             text = element_text(color = "#FFFFFF"),
-            axis.text.x = element_text(color = "#FFFFFF", angle=45),
+            axis.text.x = element_text(color = "#FFFFFF"),
             axis.text.y = element_text(color = "#FFFFFF"),
             legend.text = element_text(colour = "#FFFFFF"),
             legend.background = element_rect(fill="#444444", colour="#888888"),
@@ -262,7 +265,7 @@ server <- function(input, output, session){
           ),
           
           column(6,
-                 h4(paste("Wahat time of the week does", p2_person, "listen to music?")),
+                 h4(paste("What time of the week does", p2_person, "listen to music?")),
                  plotlyOutput("p2_heatmap")
           )
         ),
