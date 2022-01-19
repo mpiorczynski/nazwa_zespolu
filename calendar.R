@@ -27,7 +27,7 @@ for (i in 1:12) {
                 paste(str_pad(i, 2, pad="0"),
                       str_pad(1:(c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[i]), 2, pad="0")))
 }
-df_p2_bar <- data.frame(group = all_days, ms_played = rep(0, 365))
+df_p2_bar <- data.frame(group = all_days)
 
 
 df_mikolaj <- fromJSON("data/mikołaj/endsong.json") %>% 
@@ -284,10 +284,11 @@ server <- function(input, output, session){
       filter(date >= as.Date("2021-01-01")) %>% 
       group_by(group = format(date, input$p2_buckets)) %>% 
       summarise(ms_played = sum(ms_played, na.rm=TRUE))
-    
-    df <- df_p2_bar %>% 
-      merge(df, by = "group", all.x=TRUE) %>% 
-      mutate(ms_played = ifelse(is.na(ms_played), 0, ms_played))
+    if (input$p2_buckets=="%m %d") {
+      df <- df_p2_bar %>% 
+        merge(df, by = "group", all.x=TRUE) %>% 
+        mutate(ms_played = ifelse(is.na(ms_played), 0, ms_played))
+    }
     
     p2_tick_labs <- function(x) paste(floor(x/(1000*60*60)),
                                       "h",
@@ -295,7 +296,8 @@ server <- function(input, output, session){
                                       "min")
     
     p <- ggplot(df) +
-      geom_col(aes(x = group, y = ms_played), fill = "#1ED760") +
+      geom_col(aes(x=group,
+                   y=ms_played), fill = "#1ED760") +
       theme(panel.background = element_rect(fill = "#444444"),
             plot.background = element_rect(fill = "#444444"),
             text = element_text(color = "#FFFFFF"),
@@ -315,7 +317,7 @@ server <- function(input, output, session){
         scale_x_discrete(breaks = paste(str_pad(1:12, 2, pad="0"), rep("15", 12)),
                          labels = mnames2)
     }
-    ggplotly(p, source = "p2_barplot_time") %>% 
+    ggplotly(p, source = "p2_barplot_time", tooltip = NULL) %>% 
       config(displayModeBar=FALSE) %>% 
       layout(yaxis = list(fixedrange=TRUE))
   })
