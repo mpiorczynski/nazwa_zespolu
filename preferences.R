@@ -1080,7 +1080,6 @@ app_ui <- dashboardPage(
       menuItem("Activity", tabName = "activity", icon = icon('calendar')),
       menuItem("Preferences", tabName = "preferences", icon = icon('chart-line'))
     ),
-    radioButtons("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj")),
     sliderInput(
       inputId = "n", 
       label = "Select number of displayed artists: ", 
@@ -1182,6 +1181,7 @@ app_ui <- dashboardPage(
     '))),
     tabItems(
       tabItem(tabName = "preferences",
+              radioButtons("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj")),
               fluidRow(
                 box(h4("Prefered tracks tempo", style = "color: #FFFFFF"),
                     plotOutput("tempo_histogram"), background = "red"),
