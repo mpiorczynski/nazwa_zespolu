@@ -270,12 +270,12 @@ server <- function(input, output, session){
                            breaks = (0:8)*60*60*3,
                            labels = seq(from=0, to=24, by=3)) +
         scale_color_manual(values = c("#1ED760", "#00F5D2", "#23F500")) +
-        theme(panel.background = element_rect(fill = "#444444"),
-              plot.background = element_rect(fill = "#444444"),
+        theme(panel.background = element_rect(fill = "#040404"),
+              plot.background = element_rect(fill = "#040404"),
               text = element_text(color = "#FFFFFF"),
               axis.text = element_text(color = "#FFFFFF"),
     legend.text = element_text(colour = "#FFFFFF"),
-    legend.background = element_rect(fill="#444444", colour="#888888"),
+    legend.background = element_rect(fill="#040404", colour="#888888"),
     axis.ticks = element_blank(),
     panel.grid.minor = element_blank(),
     panel.grid.major = element_line(size = 0.3, colour = "#888888"),
@@ -310,12 +310,12 @@ server <- function(input, output, session){
                          breaks = (0:8)*60*60*3,
                          labels = seq(from=0, to=24, by=3)) +
       scale_color_manual(values = c("#1ED760", "#00F5D2", "#23F500")) +
-      theme(panel.background = element_rect(fill = "#444444"),
-            plot.background = element_rect(fill = "#444444"),
+      theme(panel.background = element_rect(fill = "#040404"),
+            plot.background = element_rect(fill = "#040404"),
             text = element_text(color = "#FFFFFF"),
             axis.text = element_text(color = "#FFFFFF"),
             legend.text = element_text(colour = "#FFFFFF"),
-            legend.background = element_rect(fill="#444444", colour="#888888"),
+            legend.background = element_rect(fill="#040404", colour="#888888"),
             axis.ticks = element_blank(),
             panel.grid.minor = element_blank(),
             panel.grid.major = element_line(size = 0.3, colour = "#888888"),
@@ -405,7 +405,7 @@ output$p2_heatmap <- renderPlotly({
                                                   format="%OS",
                                                   origin="")-3600,
                                format="%H:%M:%OS"))),
-              color = "#444444", #powinny być przerwy między kafelkami
+              color = "#040404", #powinny być przerwy między kafelkami
               lwd = 1) +         #ale plotly nie dziła :(((
     scale_x_continuous(breaks=1:7, labels=wdays2) +
     scale_y_reverse(breaks=0:23, labels=hours) +
@@ -413,13 +413,13 @@ output$p2_heatmap <- renderPlotly({
                         low = "black",
                         breaks = c(max(df_heatmap$z), min(df_heatmap$z)),
                         labels = c("More", "Less")) +
-    theme(panel.background = element_rect(fill = "#444444"),
-          plot.background = element_rect(fill = "#444444"),
+    theme(panel.background = element_rect(fill = "#040404"),
+          plot.background = element_rect(fill = "#040404"),
           text = element_text(color = "#FFFFFF"),
           axis.text.x = element_text(color = "#FFFFFF"),
           axis.text.y = element_text(color = "#FFFFFF"),
           legend.text = element_text(colour = "#FFFFFF"),
-          legend.background = element_rect(fill="#444444", colour="#888888"),
+          legend.background = element_rect(fill="#040404", colour="#888888"),
           axis.ticks = element_blank(),
           panel.grid.minor = element_blank(),
           panel.grid.major = element_blank(),
@@ -471,8 +471,8 @@ output$p2_bar <- renderPlotly({
                    "Total listening time:",
                    p2_tick_labs(ms_played)
                  )), fill = "#1ED760") +
-    theme(panel.background = element_rect(fill = "#444444"),
-          plot.background = element_rect(fill = "#444444"),
+    theme(panel.background = element_rect(fill = "#040404"),
+          plot.background = element_rect(fill = "#040404"),
           text = element_text(color = "#FFFFFF"),
           axis.text = element_text(color = "#FFFFFF"),
           legend.text = element_text(colour = "#FFFFFF"),
@@ -536,7 +536,8 @@ output$p2_UI <- renderUI({
                  selected = "%m",
                  width = "100%",
                  inline = TRUE
-               )
+               ),
+            background = "red"
         ),
         box(width = 3,
                h5("Return:", style = "color: #FFFFFF"),
@@ -544,10 +545,12 @@ output$p2_UI <- renderUI({
                actionButton(inputId = "p2_reset",
                             label = "",
                             icon = icon("backward"),
-                            width = "100%")
+                            width = "100%"),
+            background = "red"
         ),
         box(width = 6,
-               uiOutput("p2_UI_time_input")
+            uiOutput("p2_UI_time_input"),
+            background = "red"
         )
       ),
       
@@ -836,8 +839,8 @@ observeEvent(input$p2_reset, {
     
     p <- ggplot(df1,aes(x = Time, y = master_metadata_album_artist_name))+
       geom_col(fill = "#1ED760")+
-      theme(panel.background = element_rect(fill = "#444444"),
-            plot.background = element_rect(fill = "#444444"),
+      theme(panel.background = element_rect(fill = "#040404"),
+            plot.background = element_rect(fill = "#040404"),
             text = element_text(color = "#FFFFFF"),
             axis.text = element_text(color = "#FFFFFF"),
             legend.text = element_text(colour = "#FFFFFF"),
@@ -881,8 +884,8 @@ observeEvent(input$p2_reset, {
     
     p <- ggplot(df1,aes(x = Time, y = master_metadata_album_album_name))+
       geom_col(fill = "#1ED760")+
-      theme(panel.background = element_rect(fill = "#444444"),
-            plot.background = element_rect(fill = "#444444"),
+      theme(panel.background = element_rect(fill = "#040404"),
+            plot.background = element_rect(fill = "#040404"),
             text = element_text(color = "#FFFFFF"),
             axis.text = element_text(color = "#FFFFFF"),
             legend.text = element_text(colour = "#FFFFFF"),
@@ -949,7 +952,7 @@ observeEvent(input$p2_reset, {
                                 tab_style(
                                   style = list(
                                     cell_text(color = 'white'),
-                                    cell_fill(color = "#444444")
+                                    cell_fill(color = "#040404")
                                   ),
                                   locations = list(
                                     cells_body(),
@@ -1027,8 +1030,8 @@ observeEvent(input$p2_reset, {
         
         ggplot(df3,aes(x = endMonth, y = MonthSum))+
           geom_col(fill = "#1ED760")+
-          theme(panel.background = element_rect(fill = "#444444"),
-                plot.background = element_rect(fill = "#444444"),
+          theme(panel.background = element_rect(fill = "#040404"),
+                plot.background = element_rect(fill = "#040404"),
                 text = element_text(color = "#FFFFFF"),
                 axis.text = element_text(color = "#FFFFFF"),
                 legend.text = element_text(colour = "#FFFFFF"),
@@ -1047,7 +1050,7 @@ observeEvent(input$p2_reset, {
           tab_style(
             style = list(
               cell_text(color = 'white'),
-              cell_fill(color = "#444444")
+              cell_fill(color = "#040404")
             ),
             locations = list(
               cells_body(),
