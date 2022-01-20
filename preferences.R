@@ -839,8 +839,8 @@ observeEvent(input$p2_reset, {
     
     p <- ggplot(df1,aes(x = Time, y = master_metadata_album_artist_name))+
       geom_col(fill = "#1ED760")+
-      theme(panel.background = element_rect(fill = "#040404"),
-            plot.background = element_rect(fill = "#040404"),
+      theme(panel.background = element_rect(fill = "#121212"),
+            plot.background = element_rect(fill = "#121212"),
             text = element_text(color = "#FFFFFF"),
             axis.text = element_text(color = "#FFFFFF"),
             legend.text = element_text(colour = "#FFFFFF"),
@@ -884,8 +884,8 @@ observeEvent(input$p2_reset, {
     
     p <- ggplot(df1,aes(x = Time, y = master_metadata_album_album_name))+
       geom_col(fill = "#1ED760")+
-      theme(panel.background = element_rect(fill = "#040404"),
-            plot.background = element_rect(fill = "#040404"),
+      theme(panel.background = element_rect(fill = "#121212"),
+            plot.background = element_rect(fill = "#121212"),
             text = element_text(color = "#FFFFFF"),
             axis.text = element_text(color = "#FFFFFF"),
             legend.text = element_text(colour = "#FFFFFF"),
@@ -904,8 +904,125 @@ observeEvent(input$p2_reset, {
       )
   })
   
+  output$plot5 <- plotly::renderPlotly({
+    
+    if(input$personPlot3 == "Mikołaj"){
+      df <- df_mikolaj
+    }
+    else if(input$personPlot3 == "Krzysiek"){
+      df <- df_krzysiek
+    }
+    else {
+      df <- df_daniel
+    }
+    
+    
+    df1 <- df %>% 
+      group_by(master_metadata_track_name) %>% 
+      summarise(Time = sum(ms_played)/60000) %>% 
+      arrange(-Time) %>% 
+      head(input$n) %>% 
+      mutate(master_metadata_album_album_name = fct_reorder(master_metadata_track_name, Time))
+    
+    
+    p <- ggplot(df1,aes(x = Time, y = master_metadata_track_name))+
+      geom_col(fill = "#1ED760")+
+      theme(panel.background = element_rect(fill = "#121212"),
+            plot.background = element_rect(fill = "#121212"),
+            text = element_text(color = "#FFFFFF"),
+            axis.text = element_text(color = "#FFFFFF"),
+            legend.text = element_text(colour = "#FFFFFF"),
+            axis.ticks = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+            axis.title.y = element_blank(),
+            axis.title.x = element_text())+
+      labs(title = "Favourite tracks", x = "Minutes listened")
+    
+    plotly::ggplotly(p, source = "3") %>% 
+      config(displayModeBar = FALSE) %>% 
+      layout(
+        yaxis = list(fixedrange = TRUE),
+        xaxis = list(fixedrange = TRUE)
+      )
+    
+  })
+  
+  
+  output$description <- renderText(paste("Welcome to our site! This is result of our work for Data visualization Technices course. We analyzed our from Spotify and made an interactive dashboard. In the first tab you can see our fawourite artists, tracks and albums. In the second tab you can see listening time statistics. The third tab is about our music taste. We hope you will ejoy our site. Best regards, Daniel Krzysiek, Mikołaj"))
+  
+  
+  observeEvent(event_data("plotly_click", source = "3"), {
+    if(input$personPlot3 == "Mikolaj"){
+      df <- df_mikolaj
+    }
+    else if(input$personPlot3 == "Krzysiek"){
+      df <- df_krzysiek
+    }
+    else{
+      df <- df_daniel
+    }
+    
+    barData = event_data("plotly_click", source = "3")
+    
+    df1 <- df %>% 
+      group_by(master_metadata_track_name) %>% 
+      summarise(Time = sum(ms_played)/60000) %>% 
+      arrange(-Time) %>% 
+      head(input$n) %>% 
+      mutate(master_metadata_track_name = fct_reorder(master_metadata_track_name, Time))
+    
+    song <- df1[barData$pointNumber+1,1] %>% 
+      mutate(master_metadata_track_name = as.character(master_metadata_track_name))
+    
+    song <- as.character(song)
+    
+    wykon <- ez <- as.character(df_daniel %>%
+                                  filter(master_metadata_track_name == song)%>%
+                                  head(1)%>%
+                                  select(master_metadata_album_artist_name))
+    
+    showModal(modalDialog(easyClose = TRUE, title = tags$a(style = "color: white", icon('robot'), as.character(song)),
+                          renderText(paste("Wykonawca : ", wykon)),
+                          br(),
+                          renderPlot({
+                            endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
+                            MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
+                            df1 <- data.frame(endMonth, MonthSum)
+                            
+                            df2 <- df %>% 
+                              mutate(endTime = as.Date(ts)) %>% 
+                              mutate(
+                                endMonth = strftime(endTime, "%m")
+                              ) %>% 
+                              filter(master_metadata_track_name == song) %>% 
+                              group_by(endMonth) %>% 
+                              summarise(MonthSum = sum(ms_played)/60000)
+                            
+                            df3 <- rbind(df2,df1)
+                            
+                            ggplot(df3,aes(x = endMonth, y = MonthSum))+
+                              geom_col(fill = "#1ED760")+
+                              theme(panel.background = element_rect(fill = "#121212"),
+                                    plot.background = element_rect(fill = "#121212"),
+                                    text = element_text(color = "#FFFFFF"),
+                                    axis.text = element_text(color = "#FFFFFF"),
+                                    legend.text = element_text(colour = "#FFFFFF"),
+                                    axis.ticks = element_blank(),
+                                    panel.grid.minor = element_blank(),
+                                    panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+                                    axis.title.y = element_text(),
+                                    axis.title.x = element_text())+
+                              labs(x = "Month", y = "Minutes played")+
+                              scale_x_discrete(labels = c("Jan","Feb","Mar", "Apr", "May", "June", "Jul","Aug","Sep","Oct","Nov","Dec"))
+                          }
+                          )
+    ))
+  })
+  
+  
+  
   observeEvent(event_data("plotly_click", source = "2"), {
-    if(input$id=="Plot3"){
       
       if(input$personPlot3 == "Mikolaj"){
         df <- df_mikolaj
@@ -941,18 +1058,57 @@ observeEvent(input$p2_reset, {
         head(5)
       colnames(favSong) <- c("Track Name", "Minutes Listened")
       
+      wykon <- ez <- as.character(df_daniel %>%
+                                    filter(master_metadata_track_name == artist)%>%
+                                    head(1)%>%
+                                    select(master_metadata_album_artist_name))
       
-      
-      
-      
-      showModal(modalDialog(title = , easyClose = TRUE,
+    
+      showModal(modalDialog(title = tags$a(style = "color: white", icon('robot'), as.character(artist)), easyClose = TRUE,
+                            renderText(paste("Wykonawca : ", wykon)),
+                            br(),
+                            renderPlot({
+                              endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
+                              MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
+                              
+                              df1 <- data.frame(endMonth, MonthSum)
+                              
+                              
+                              
+                              df2 <- df %>% 
+                                mutate(endTime = as.Date(ts)) %>% 
+                                mutate(
+                                  endMonth = strftime(endTime, "%m")
+                                ) %>% 
+                                filter(master_metadata_album_album_name == artist) %>% 
+                                group_by(endMonth) %>% 
+                                summarise(MonthSum = sum(ms_played)/60000)
+                              
+                              df3 <- rbind(df2,df1)
+                              
+                              ggplot(df3,aes(x = endMonth, y = MonthSum))+
+                                geom_col(fill = "#1ED760")+
+                                theme(panel.background = element_rect(fill = "#121212"),
+                                      plot.background = element_rect(fill = "#121212"),
+                                      text = element_text(color = "#FFFFFF"),
+                                      axis.text = element_text(color = "#FFFFFF"),
+                                      legend.text = element_text(colour = "#FFFFFF"),
+                                      axis.ticks = element_blank(),
+                                      panel.grid.minor = element_blank(),
+                                      panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+                                      axis.title.y = element_text(),
+                                      axis.title.x = element_text())+
+                                labs(x = "Month", y = "Minutes played")+
+                                scale_x_discrete(labels = c("Jan","Feb","Mar", "Apr", "May", "June", "Jul","Aug","Sep","Oct","Nov","Dec"))
+                            }),
+                            br(),
                             render_gt({
                               gt(favSong) %>% 
                                 tab_header(title = md("Favourite tracks on selected album")) %>% 
                                 tab_style(
                                   style = list(
                                     cell_text(color = 'white'),
-                                    cell_fill(color = "#040404")
+                                    cell_fill(color = "#121212")
                                   ),
                                   locations = list(
                                     cells_body(),
@@ -965,7 +1121,7 @@ observeEvent(input$p2_reset, {
                               
                             })
       ))
-    }
+    
     
   })
   
@@ -1008,7 +1164,7 @@ observeEvent(input$p2_reset, {
       
       
       
-      showModal(modalDialog(easyClose = TRUE, title = tags$a(style = "color: white", icon('robot'), br(), as.character(artist)), renderPlot({
+      showModal(modalDialog(easyClose = TRUE, title = tags$a(style = "color: white", icon('robot'), as.character(artist)), renderPlot({
         
         endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
         MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
@@ -1040,7 +1196,8 @@ observeEvent(input$p2_reset, {
                 panel.grid.major = element_line(size = 0.3, colour = "#888888"),
                 axis.title.y = element_blank(),
                 axis.title.x = element_text())+
-          labs(x = "Month", y = "Minutes played")
+          labs(x = "Month", y = "Minutes played")+
+          scale_x_discrete(labels = c("Jan","Feb","Mar", "Apr", "May", "June", "Jul","Aug","Sep","Oct","Nov","Dec"))
       }),
       
       br(),
@@ -1050,7 +1207,7 @@ observeEvent(input$p2_reset, {
           tab_style(
             style = list(
               cell_text(color = 'white'),
-              cell_fill(color = "#040404")
+              cell_fill(color = "#121212")
             ),
             locations = list(
               cells_body(),
@@ -1193,6 +1350,9 @@ app_ui <- dashboardPage(
       .form-group .shiny-input-radiogroup .shiny-input-container .shiny-input-container-inline .shiny-bound-input .shinyjs-resettable {
         background-color: #040404;
       }
+      .modal-content{
+        background-color: #121212;
+      }
 
     '))),
     tabItems(
@@ -1215,6 +1375,9 @@ app_ui <- dashboardPage(
       ),
       tabItem(tabName = "top",
               chooseSliderSkin("Flat", "#1ED760"),
+              fluidRow(
+                box(textOutput("description")),
+                box(plotlyOutput("plot5"))),
               fluidRow(
                 box(plotlyOutput("plot3"), background = "red"),
                 box(plotlyOutput("plot4"), background = "red" )
