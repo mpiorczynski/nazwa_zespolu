@@ -852,7 +852,7 @@ server <- function(input, output, session){
             panel.grid.major = element_line(size = 0.3, colour = "#888888"),
             axis.title.y = element_blank(),
             axis.title.x = element_text())+
-      labs(title = "Favourite Artists", x = "Minutes listened")
+      labs(title = "Favourite artists", x = "Minutes listened")
     
     plotly::ggplotly(p, source = "1", tooltip = "text") %>% 
       config(displayModeBar = FALSE) %>% 
@@ -1234,7 +1234,7 @@ server <- function(input, output, session){
       tagList(
         sliderInput(
           inputId = "n", 
-          label = "Select number of displayed artists: ", 
+          label = "Select number of displayed columns: ", 
           min = 5, 
           max = 15, 
           value = 10
@@ -1372,7 +1372,7 @@ app_ui <- dashboardPage(
                 box(h4("Prefered tracks tempo", style = "color: #FFFFFF"),
                     withSpinner(plotOutput("tempo_histogram"), color="#1ED760", type=4),
                     background = "red"),
-                box(h4("Prefered tracks tempo", style = "color: #FFFFFF"),
+                box(h4("Favourite genres", style = "color: #FFFFFF"),
                     withSpinner(plotOutput("genres"), color="#1ED760", type=4), background = "red")
               ), 
               fluidRow(
@@ -1391,7 +1391,8 @@ app_ui <- dashboardPage(
       tabItem(tabName = "top",
               chooseSliderSkin("Flat", "#1ED760"),
               fluidRow(
-                box(textOutput("description"), background = "red"),
+                box(h2("Welcome!"),p("Welcome to our site! This is the result of our work for Data Visualization Techniques course. We analyzed our data from Spotify, made an interactive dashboard and now we want to share it with you! In the first tab you can see our favorite artists, tracks and albums. In the second tab you can see listening time statistics. The third tab is about our music taste. We tried to make the site as interactive as possible, so don’t forget to click everything. We hope you will enjoy our site."),
+                    br(), p("Daniel, Krzysiek, Mikołaj"), background = "red"),
                 box(plotlyOutput("plot5"), background = "red")
               ),
               fluidRow(
