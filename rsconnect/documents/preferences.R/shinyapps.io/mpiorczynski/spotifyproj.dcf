@@ -1,0 +1,14 @@
+name: spotifyproj
+title: spotifyproj
+username:
+account: mpiorczynski
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5473227
+bundleId: 5487321
+url: https://mpiorczynski.shinyapps.io/spotifyproj/
+when: 1642645568.96605
+lastSyncTime: 1642645568.96605
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: calendar.R|EDA.R|get_audio_features.R|propozycje.txt|README.md|server.R|ui.R

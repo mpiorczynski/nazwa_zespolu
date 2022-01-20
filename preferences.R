@@ -270,12 +270,12 @@ server <- function(input, output, session){
                            breaks = (0:8)*60*60*3,
                            labels = seq(from=0, to=24, by=3)) +
         scale_color_manual(values = c("#1ED760", "#00F5D2", "#23F500")) +
-        theme(panel.background = element_rect(fill = "#040404"),
-              plot.background = element_rect(fill = "#040404"),
+        theme(panel.background = element_rect(fill = "#121212"),
+              plot.background = element_rect(fill = "#121212"),
               text = element_text(color = "#FFFFFF"),
               axis.text = element_text(color = "#FFFFFF"),
               legend.text = element_text(colour = "#FFFFFF"),
-              legend.background = element_rect(fill="#040404", colour="#888888"),
+              legend.background = element_rect(fill="#121212", colour="#888888"),
               axis.ticks = element_blank(),
               panel.grid.minor = element_blank(),
               panel.grid.major = element_line(size = 0.3, colour = "#888888"),
@@ -310,12 +310,12 @@ server <- function(input, output, session){
                            breaks = (0:8)*60*60*3,
                            labels = seq(from=0, to=24, by=3)) +
         scale_color_manual(values = c("#1ED760", "#00F5D2", "#23F500")) +
-        theme(panel.background = element_rect(fill = "#040404"),
-              plot.background = element_rect(fill = "#040404"),
+        theme(panel.background = element_rect(fill = "#121212"),
+              plot.background = element_rect(fill = "#121212"),
               text = element_text(color = "#FFFFFF"),
               axis.text = element_text(color = "#FFFFFF"),
               legend.text = element_text(colour = "#FFFFFF"),
-              legend.background = element_rect(fill="#040404", colour="#888888"),
+              legend.background = element_rect(fill="#121212", colour="#888888"),
               axis.ticks = element_blank(),
               panel.grid.minor = element_blank(),
               panel.grid.major = element_line(size = 0.3, colour = "#888888"),
@@ -405,7 +405,7 @@ server <- function(input, output, session){
                                                     format="%OS",
                                                     origin="")-3600,
                                  format="%H:%M:%OS"))),
-                color = "#040404", #powinny być przerwy między kafelkami
+                color = "#121212", #powinny być przerwy między kafelkami
                 lwd = 1) +         #ale plotly nie dziła :(((
       scale_x_continuous(breaks=1:7, labels=wdays2) +
       scale_y_reverse(breaks=0:23, labels=hours) +
@@ -413,13 +413,13 @@ server <- function(input, output, session){
                           low = "black",
                           breaks = c(max(df_heatmap$z), min(df_heatmap$z)),
                           labels = c("More", "Less")) +
-      theme(panel.background = element_rect(fill = "#040404"),
-            plot.background = element_rect(fill = "#040404"),
+      theme(panel.background = element_rect(fill = "#121212"),
+            plot.background = element_rect(fill = "#121212"),
             text = element_text(color = "#FFFFFF"),
             axis.text.x = element_text(color = "#FFFFFF"),
             axis.text.y = element_text(color = "#FFFFFF"),
             legend.text = element_text(colour = "#FFFFFF"),
-            legend.background = element_rect(fill="#040404", colour="#888888"),
+            legend.background = element_rect(fill="#121212", colour="#888888"),
             axis.ticks = element_blank(),
             panel.grid.minor = element_blank(),
             panel.grid.major = element_blank(),
@@ -471,8 +471,8 @@ server <- function(input, output, session){
                      "Total listening time:",
                      p2_tick_labs(ms_played)
                    )), fill = "#1ED760") +
-      theme(panel.background = element_rect(fill = "#040404"),
-            plot.background = element_rect(fill = "#040404"),
+      theme(panel.background = element_rect(fill = "#121212"),
+            plot.background = element_rect(fill = "#121212"),
             text = element_text(color = "#FFFFFF"),
             axis.text = element_text(color = "#FFFFFF"),
             legend.text = element_text(colour = "#FFFFFF"),
@@ -555,8 +555,12 @@ server <- function(input, output, session){
         ),
         
         fluidRow(
-          h4(paste(p2_person, "'s listening time last year", sep=""), style = "color: #FFFFFF"),
-          withSpinner(plotlyOutput("p2_bar"), color="#1ED760", type=4)
+          box(
+            width = 12,
+            h4(paste(p2_person, "'s listening time last year", sep=""), style = "color: #FFFFFF"),
+            withSpinner(plotlyOutput("p2_bar"), color="#1ED760", type=4),
+            background = "red"
+          )
         )
       )
     }
@@ -670,7 +674,6 @@ server <- function(input, output, session){
         add_trace(
           x = density_df_krzysiek[[feature_n]][['x']],
           y = density_df_krzysiek[[feature_n]][['y']],
-          hovertemplate = paste("Feature: %{theta}<br>Value: %{r:.3f}<extra></extra>"),
           
           color = 'red', 
           opacity = alpha_krzysiek,
@@ -837,7 +840,7 @@ server <- function(input, output, session){
       mutate(master_metadata_album_artist_name = fct_reorder(master_metadata_album_artist_name, Time))
     
     
-    p <- ggplot(df1,aes(x = Time, y = master_metadata_album_artist_name))+
+    p <- ggplot(df1,aes(x = Time, y = master_metadata_album_artist_name, text = paste("Time: ", Time, "\nArtist: ", master_metadata_album_artist_name)))+
       geom_col(fill = "#1ED760")+
       theme(panel.background = element_rect(fill = "#121212"),
             plot.background = element_rect(fill = "#121212"),
@@ -851,7 +854,7 @@ server <- function(input, output, session){
             axis.title.x = element_text())+
       labs(title = "Favourite Artists", x = "Minutes listened")
     
-    plotly::ggplotly(p, source = "1") %>% 
+    plotly::ggplotly(p, source = "1", tooltip = "text") %>% 
       config(displayModeBar = FALSE) %>% 
       layout(
         yaxis = list(fixedrange = TRUE),
@@ -882,7 +885,7 @@ server <- function(input, output, session){
       mutate(master_metadata_album_album_name = fct_reorder(master_metadata_album_album_name, Time))
     
     
-    p <- ggplot(df1,aes(x = Time, y = master_metadata_album_album_name))+
+    p <- ggplot(df1,aes(x = Time, y = master_metadata_album_album_name, text = paste("Time: ", Time, "\nAlbum: ", master_metadata_album_album_name)))+
       geom_col(fill = "#1ED760")+
       theme(panel.background = element_rect(fill = "#121212"),
             plot.background = element_rect(fill = "#121212"),
@@ -896,7 +899,7 @@ server <- function(input, output, session){
             axis.title.x = element_text())+
       labs(title = "Favourite albums", x = "Minutes listened")
     
-    plotly::ggplotly(p, source = "2") %>% 
+    plotly::ggplotly(p, source = "2", tooltip = "text") %>% 
       config(displayModeBar = FALSE) %>% 
       layout(
         yaxis = list(fixedrange = TRUE),
@@ -925,7 +928,7 @@ server <- function(input, output, session){
       mutate(master_metadata_album_album_name = fct_reorder(master_metadata_track_name, Time))
     
     
-    p <- ggplot(df1,aes(x = Time, y = master_metadata_track_name))+
+    p <- ggplot(df1,aes(x = Time, y = master_metadata_track_name, text = paste("Time: ", Time, "\nTrack: ", master_metadata_track_name)))+
       geom_col(fill = "#1ED760")+
       theme(panel.background = element_rect(fill = "#121212"),
             plot.background = element_rect(fill = "#121212"),
@@ -939,7 +942,7 @@ server <- function(input, output, session){
             axis.title.x = element_text())+
       labs(title = "Favourite tracks", x = "Minutes listened")
     
-    plotly::ggplotly(p, source = "3") %>% 
+    plotly::ggplotly(p, source = "3", tooltip = "text") %>% 
       config(displayModeBar = FALSE) %>% 
       layout(
         yaxis = list(fixedrange = TRUE),
@@ -949,7 +952,10 @@ server <- function(input, output, session){
   })
   
   
-  output$description <- renderText(paste("Welcome to our site! This is result of our work for Data visualization Technices course. We analyzed our from Spotify and made an interactive dashboard. In the first tab you can see our fawourite artists, tracks and albums. In the second tab you can see listening time statistics. The third tab is about our music taste. We hope you will ejoy our site. Best regards, Daniel Krzysiek, Mikołaj"))
+  output$description <- renderText(
+    h4("Welcome to our site! This is the result of our work for Data Visualization Techniques course. We analyzed our data from Spotify, made an interactive dashboard and now we want to share it with you! In the first tab you can see our favorite artists, tracks and albums. In the second tab you can see listening time statistics. The third tab is about our music taste. We tried to make the site as interactive as possible, so don’t forget to click everything. We hope you will enjoy our site.
+    \nDaniel, Krzysiek, Mikołaj")
+  )
   
   
   observeEvent(event_data("plotly_click", source = "3"), {
@@ -1241,7 +1247,7 @@ server <- function(input, output, session){
         )
       )
     } else if (input$menu == "preferences") {
-      selectInput("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj"))
+      selectInput("person", "Select person:", choices = c("Daniel", "Krzysiek", "Mikołaj"))
     }
     
   })
@@ -1314,7 +1320,7 @@ app_ui <- dashboardPage(
       
       .radio {
         font-weight: normal;
-        background-color: #040404;
+        background-color: #121212;
       }
       
       .control-label {
@@ -1336,21 +1342,26 @@ app_ui <- dashboardPage(
       }
       
       .skin-blue .main-header .navbar .sidebar-toggle:hover {
-          background-color: #1DB954;
+          background-color: #1ED760;
       }
       
-      .fa .fa-backward {
-        background-color: #040404;
+      
+      .radio-inline {
+          background-color: #121212 !important;
+
       }
       
       #p2_buckets {
-        background-color: #040404;
+        background-color: #121212 !important;
       }
       
-      .form-group .shiny-input-radiogroup .shiny-input-container .shiny-input-container-inline .shiny-bound-input .shinyjs-resettable {
-        background-color: #040404;
+    
+      #p2_reset {
+        background-color: #1ED760 !important;
       }
-      .modal-content{
+      
+      
+      .modal-content {
         background-color: #121212;
       }
 
@@ -1359,28 +1370,33 @@ app_ui <- dashboardPage(
       tabItem(tabName = "preferences",
               fluidRow(
                 box(h4("Prefered tracks tempo", style = "color: #FFFFFF"),
-                    plotOutput("tempo_histogram"), background = "red"),
+                    withSpinner(plotOutput("tempo_histogram"), color="#1ED760", type=4),
+                    background = "red"),
                 box(h4("Prefered tracks tempo", style = "color: #FFFFFF"),
-                    plotOutput("genres"), background = "red")
+                    withSpinner(plotOutput("genres"), color="#1ED760", type=4), background = "red")
               ), 
               fluidRow(
                 box(
                   h4("Prefered features comparison", style = "color: #FFFFFF"),
-                  plotlyOutput("radar_plot", width = "90%"), width = 6, background = "red"
+                  withSpinner(plotlyOutput("radar_plot", width = "90%"), color="#1ED760", type=4),
+                  width = 6, background = "red"
                   
                 ),
-                box(plotlyOutput("density_plot"), width = 6, background = "red")  
+                box(
+                  withSpinner(plotlyOutput("density_plot"), color="#1ED760", type=4),
+                  width = 6, background = "red")  
               )
               
       ),
       tabItem(tabName = "top",
               chooseSliderSkin("Flat", "#1ED760"),
               fluidRow(
-                box(textOutput("description")),
-                box(plotlyOutput("plot5"))),
+                box(textOutput("description"), background = "red"),
+                box(plotlyOutput("plot5"), background = "red")
+              ),
               fluidRow(
                 box(plotlyOutput("plot3"), background = "red"),
-                box(plotlyOutput("plot4"), background = "red" )
+                box(plotlyOutput("plot4"), background = "red")
               )
       ),
       tabItem(tabName = "activity", 
@@ -1394,4 +1410,3 @@ app_ui <- dashboardPage(
 )
 
 shinyApp(app_ui, server)
-
