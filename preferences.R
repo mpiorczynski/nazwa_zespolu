@@ -17,7 +17,7 @@ library(shinyjs)
 library(kit)
 library(forcats)
 library(fresh)
-
+library(gt)
 
 #---------------------------------------------------------------------
 
@@ -30,6 +30,14 @@ mnames <- c("January", "February", "March", "April",
 mnames2 <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 hours <- sprintf("%02d:00-%02d:00", 0:23, 1:24)
 p2_ed <- NULL
+
+all_days <- c()
+for (i in 1:12) {
+  all_days <- c(all_days,
+                paste(str_pad(i, 2, pad="0"),
+                      str_pad(1:(c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[i]), 2, pad="0")))
+}
+df_p2_bar <- data.frame(group = all_days)
 
 
 df_mikolaj <- fromJSON("data/mikołaj/endsong.json") %>% 
@@ -346,7 +354,7 @@ output$p2_UI_time_input <- renderUI({
   max_time <- max(df$ts)
   
   tagList(
-    h5("Select time period:"),
+    h5("Select time period:", style = "color: #FFFFFF;"),
     sliderInput(
       inputId = "p2_time",
       label = NULL,
@@ -502,13 +510,15 @@ output$p2_UI <- renderUI({
       
       fluidRow(
         box(width = 6,
-               h4(paste("What time of the day does", p2_person, "listen to music?"), style = "color: #FFFFFF"),
-               withSpinner(plotlyOutput("p2_density"), color="#1ED760", type=4)
+            h4(paste("What time of the day does", p2_person, "listen to music?"), style = "color: #FFFFFF"),
+            withSpinner(plotlyOutput("p2_density"), color="#1ED760", type=4),
+            background = "red"
         ),
         
         box(width = 6,
-               h4(paste("What time of the week does", p2_person, "listen to music?"), style = "color: #FFFFFF"),
-               withSpinner(plotlyOutput("p2_heatmap"), color="#1ED760", type=4)
+            h4(paste("What time of the week does", p2_person, "listen to music?"), style = "color: #FFFFFF"),
+            withSpinner(plotlyOutput("p2_heatmap"), color="#1ED760", type=4),
+            background = "red"
         )
       ),
       
@@ -836,7 +846,12 @@ observeEvent(input$p2_reset, {
             axis.title.x = element_text())+
       labs(title = "Favourite Artists", x = "Minutes listened")
     
-    plotly::ggplotly(p, source = "1")
+    plotly::ggplotly(p, source = "1") %>% 
+      config(displayModeBar = FALSE) %>% 
+      layout(
+        yaxis = list(fixedrange = TRUE),
+        xaxis = list(fixedrange = TRUE)
+      )
   })
   
   output$plot4 <- plotly::renderPlotly({
@@ -876,7 +891,12 @@ observeEvent(input$p2_reset, {
             axis.title.x = element_text())+
       labs(title = "Favourite albums", x = "Minutes listened")
     
-    plotly::ggplotly(p, source = "2")
+    plotly::ggplotly(p, source = "2") %>% 
+      config(displayModeBar = FALSE) %>% 
+      layout(
+        yaxis = list(fixedrange = TRUE),
+        xaxis = list(fixedrange = TRUE)
+      )
   })
   
   observeEvent(event_data("plotly_click", source = "2"), {
@@ -948,7 +968,6 @@ observeEvent(input$p2_reset, {
   
   
   observeEvent(event_data("plotly_click", source = "1"), {
-    if(input$id == "Plot3"){
       
       if(input$personPlot3 == "Mikolaj"){
         df <- df_mikolaj
@@ -1040,7 +1059,6 @@ observeEvent(input$p2_reset, {
       })
       
       ))
-    }
   })
   
 
@@ -1165,11 +1183,14 @@ app_ui <- dashboardPage(
     tabItems(
       tabItem(tabName = "preferences",
               fluidRow(
-                box(plotOutput("tempo_histogram"), background = "red"),
-                box(plotOutput("genres"), background = "red")
+                box(h4("Prefered tracks tempo", style = "color: #FFFFFF"),
+                    plotOutput("tempo_histogram"), background = "red"),
+                box(h4("Prefered tracks tempo", style = "color: #FFFFFF"),
+                    plotOutput("genres"), background = "red")
               ), 
               fluidRow(
-                box(plotlyOutput("radar_plot"), width = 4, background = "red"),
+                h4("Prefered features comparison", style = "color: #FFFFFF"),
+                box(plotlyOutput("radar_plot", width = "50%"), width = 4, background = "red"),
                 box(plotlyOutput("density_plot"), width = 8, background = "red")  
               )
               
@@ -1177,8 +1198,8 @@ app_ui <- dashboardPage(
       tabItem(tabName = "top",
               chooseSliderSkin("Flat", "#1ED760"),
               fluidRow(
-                box(plotlyOutput("plot3")),
-                box(plotlyOutput("plot4"))
+                box(plotlyOutput("plot3"), background = "red"),
+                box(plotlyOutput("plot4"), background = "red" )
               )
       ),
       tabItem(tabName = "activity", 
