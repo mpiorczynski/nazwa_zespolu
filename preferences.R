@@ -526,7 +526,7 @@ output$p2_UI <- renderUI({
       
       fluidRow(
         box(width = 3,
-               h5("Barplot controls:"),
+               h5("Barplot controls:", style = "color: #FFFFFF"),
                br(),
                radioButtons(
                  inputId = "p2_buckets",
@@ -539,7 +539,7 @@ output$p2_UI <- renderUI({
                )
         ),
         box(width = 3,
-               h5("Return:"),
+               h5("Return:", style = "color: #FFFFFF"),
                br(),
                actionButton(inputId = "p2_reset",
                             label = "",
@@ -1081,7 +1081,7 @@ observeEvent(input$p2_reset, {
         )
       )
     } else if (input$menu == "preferences") {
-      radioButtons("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj"))
+      selectInput("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj"))
     }
     
   })
@@ -1105,7 +1105,7 @@ app_ui <- dashboardPage(
       menuItem("Activity", tabName = "activity", icon = icon('calendar')),
       menuItem("Preferences", tabName = "preferences", icon = icon('chart-line'))
     ),
-    renderUI("sidebar")
+    uiOutput("sidebar")
   ),
   dashboardBody(
     tags$head(tags$style(HTML('
