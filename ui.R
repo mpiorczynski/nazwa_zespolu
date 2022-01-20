@@ -3,6 +3,7 @@ library(dplyr)
 library(ggplot2)
 library(shinyjs)
 library(shinycssloaders)
+library(shinyWidgets)
 library(jsonlite)
 library(fresh)
 library(kit)
@@ -67,26 +68,25 @@ ui3 <- fluidPage(
   useShinyjs(),
   chooseSliderSkin("Flat", "#1ED760"),
   titlePanel("Visualization 3. - click bar for additional info"),
-  sidebarLayout(
-    sidebarPanel(
-      sliderInput(
+      fluidRow(column(6, br(), br(), br(), br(), br(), sliderInput(
+        width = '100%',
         inputId = "n", 
-        label = "Select number of displayed artists: ", 
+        label = "Select number of displayed rows: ", 
         min = 5, 
         max = 15, 
         value = 10
       ),
       selectInput(
+        width = '100%',
         inputId = "personPlot3", 
         label = "Select person: ", 
         choices = c("Krzysiek", "Mikołaj", "Daniel"), 
         selected = "Krzysiek"
-      )
-    ),
-    mainPanel(
-      fluidRow(column(6, plotly::plotlyOutput("plot3")),column(6, plotly::plotlyOutput("plot4")))
-    )
-  )
+      )),
+      column(6,plotly::plotlyOutput("plot5")), ),
+  br(),
+  fluidRow(column(6, plotly::plotlyOutput("plot3")),
+           column(6, plotly::plotlyOutput("plot4")))
 )
 
 app_ui <- navbarPage(

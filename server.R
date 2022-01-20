@@ -141,8 +141,122 @@ server <- function(input, output, session){
     plotly::ggplotly(p, source = "2")
   })
   
+  output$plot5 <- plotly::renderPlotly({
+    
+    if(input$personPlot3 == "Mikołaj"){
+      df <- df_mikolaj
+    }
+    else if(input$personPlot3 == "Krzysiek"){
+      df <- df_krzysiek
+    }
+    else {
+      df <- df_daniel
+    }
+    
+    
+    df1 <- df %>% 
+      group_by(master_metadata_track_name) %>% 
+      summarise(Time = sum(ms_played)/60000) %>% 
+      arrange(-Time) %>% 
+      head(input$n) %>% 
+      mutate(master_metadata_album_album_name = fct_reorder(master_metadata_track_name, Time))
+    
+    
+    p <- ggplot(df1,aes(x = Time, y = master_metadata_track_name))+
+      geom_col(fill = "#1ED760")+
+      theme(panel.background = element_rect(fill = "#444444"),
+            plot.background = element_rect(fill = "#444444"),
+            text = element_text(color = "#FFFFFF"),
+            axis.text = element_text(color = "#FFFFFF"),
+            legend.text = element_text(colour = "#FFFFFF"),
+            axis.ticks = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+            axis.title.y = element_blank(),
+            axis.title.x = element_text())+
+      labs(title = "Favourite tracks", x = "Minutes listened")
+    
+    plotly::ggplotly(p, source = "3")
+    
+  })
+  
+  
+  observeEvent(event_data("plotly_click", source = "3"), {
+    if(input$personPlot3 == "Mikolaj"){
+      df <- df_mikolaj
+    }
+    else if(input$personPlot3 == "Krzysiek"){
+      df <- df_krzysiek
+    }
+    else{
+      df <- df_daniel
+    }
+    
+    barData = event_data("plotly_click", source = "3")
+    
+    df1 <- df %>% 
+      group_by(master_metadata_track_name) %>% 
+      summarise(Time = sum(ms_played)/60000) %>% 
+      arrange(-Time) %>% 
+      head(input$n) %>% 
+      mutate(master_metadata_track_name = fct_reorder(master_metadata_track_name, Time))
+    
+    song <- df1[barData$pointNumber+1,1] %>% 
+      mutate(master_metadata_track_name = as.character(master_metadata_track_name))
+    
+    song <- as.character(song)
+    
+    wykon <- ez <- as.character(df_daniel %>%
+                                  filter(master_metadata_track_name == song)%>%
+                                  head(1)%>%
+                                  select(master_metadata_album_artist_name))
+    
+    showModal(modalDialog(easyClose = TRUE, title = tags$a(style = "color: white", icon('robot'), as.character(song)),
+                          renderText(paste("Wykonawca : ", wykon)),
+                          br(),
+                          renderPlot({
+                            endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
+                            MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
+                            df1 <- data.frame(endMonth, MonthSum)
+                            
+                            df2 <- df %>% 
+                              mutate(endTime = as.Date(ts)) %>% 
+                              mutate(
+                                endMonth = strftime(endTime, "%m")
+                              ) %>% 
+                              filter(master_metadata_track_name == song) %>% 
+                              group_by(endMonth) %>% 
+                              summarise(MonthSum = sum(ms_played)/60000)
+                            
+                            df3 <- rbind(df2,df1)
+                            
+                            ggplot(df3,aes(x = endMonth, y = MonthSum))+
+                              geom_col(fill = "#1ED760")+
+                              theme(panel.background = element_rect(fill = "#444444"),
+                                    plot.background = element_rect(fill = "#444444"),
+                                    text = element_text(color = "#FFFFFF"),
+                                    axis.text = element_text(color = "#FFFFFF"),
+                                    legend.text = element_text(colour = "#FFFFFF"),
+                                    axis.ticks = element_blank(),
+                                    panel.grid.minor = element_blank(),
+                                    panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+                                    axis.title.y = element_text(),
+                                    axis.title.x = element_text())+
+                              labs(x = "Month", y = "Minutes played")+
+                              scale_x_discrete(labels = c("Jan","Feb","Mar", "Apr", "May", "June", "Jul","Aug","Sep","Oct","Nov","Dec"))
+                          }
+                        )
+                      ))
+  })
+  
+  
+  
+  
+  
+  
+  
+  
   observeEvent(event_data("plotly_click", source = "2"), {
-    if(input$id=="Plot3"){
       
       if(input$personPlot3 == "Mikolaj"){
         df <- df_mikolaj
@@ -182,7 +296,42 @@ server <- function(input, output, session){
       
       
       
-      showModal(modalDialog(title = , easyClose = TRUE,
+      showModal(modalDialog(easyClose = TRUE, title = tags$a(style = "color: white", icon('robot'), as.character(artist)),
+                            renderPlot({
+                              endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
+                              MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
+                              
+                              df1 <- data.frame(endMonth, MonthSum)
+                              
+                              
+                              
+                              df2 <- df %>% 
+                                mutate(endTime = as.Date(ts)) %>% 
+                                mutate(
+                                  endMonth = strftime(endTime, "%m")
+                                ) %>% 
+                                filter(master_metadata_album_album_name == artist) %>% 
+                                group_by(endMonth) %>% 
+                                summarise(MonthSum = sum(ms_played)/60000)
+                              
+                              df3 <- rbind(df2,df1)
+                              
+                              ggplot(df3,aes(x = endMonth, y = MonthSum))+
+                                geom_col(fill = "#1ED760")+
+                                theme(panel.background = element_rect(fill = "#444444"),
+                                      plot.background = element_rect(fill = "#444444"),
+                                      text = element_text(color = "#FFFFFF"),
+                                      axis.text = element_text(color = "#FFFFFF"),
+                                      legend.text = element_text(colour = "#FFFFFF"),
+                                      axis.ticks = element_blank(),
+                                      panel.grid.minor = element_blank(),
+                                      panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+                                      axis.title.y = element_text(),
+                                      axis.title.x = element_text())+
+                                labs(x = "Month", y = "Minutes played")+
+                                scale_x_discrete(labels = c("Jan","Feb","Mar", "Apr", "May", "June", "Jul","Aug","Sep","Oct","Nov","Dec"))
+                            }),
+                            br(),
         render_gt({
           gt(favSong) %>% 
             tab_header(title = md("Favourite tracks on selected album")) %>% 
@@ -202,7 +351,7 @@ server <- function(input, output, session){
           
         })
       ))
-    }
+    
     
   })
   
@@ -210,8 +359,7 @@ server <- function(input, output, session){
   
   
   observeEvent(event_data("plotly_click", source = "1"), {
-    if(input$id == "Plot3"){
-      
+
       if(input$personPlot3 == "Mikolaj"){
         df <- df_mikolaj
       }
@@ -246,7 +394,7 @@ server <- function(input, output, session){
       
       
       
-      showModal(modalDialog(easyClose = TRUE, title = tags$a(style = "color: white", icon('robot'), br(), as.character(artist)), renderPlot({
+      showModal(modalDialog(easyClose = TRUE, title = tags$a(style = "color: white", icon('robot'), as.character(artist)), renderPlot({
         
         endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
         MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
@@ -276,9 +424,10 @@ server <- function(input, output, session){
                 axis.ticks = element_blank(),
                 panel.grid.minor = element_blank(),
                 panel.grid.major = element_line(size = 0.3, colour = "#888888"),
-                axis.title.y = element_blank(),
+                axis.title.y = element_text(),
                 axis.title.x = element_text())+
-          labs(x = "Month", y = "Minutes played")
+          labs(x = "Month", y = "Minutes played")+
+          scale_x_discrete(labels = c("Jan","Feb","Mar", "Apr", "May", "June", "Jul","Aug","Sep","Oct","Nov","Dec"))
       }),
   
       br(),
@@ -302,7 +451,6 @@ server <- function(input, output, session){
       })
       
       ))
-    }
   })
   
 }
