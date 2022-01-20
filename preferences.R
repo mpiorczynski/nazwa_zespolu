@@ -274,21 +274,102 @@ server <- function(input, output, session){
               plot.background = element_rect(fill = "#040404"),
               text = element_text(color = "#FFFFFF"),
               axis.text = element_text(color = "#FFFFFF"),
-    legend.text = element_text(colour = "#FFFFFF"),
-    legend.background = element_rect(fill="#040404", colour="#888888"),
-    axis.ticks = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.grid.major = element_line(size = 0.3, colour = "#888888"),
-    axis.title.y = element_blank(),
-    axis.title.x = element_text()) +
-    labs(colour = "Person")
+              legend.text = element_text(colour = "#FFFFFF"),
+              legend.background = element_rect(fill="#040404", colour="#888888"),
+              axis.ticks = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+              axis.title.y = element_blank(),
+              axis.title.x = element_text()) +
+        labs(colour = "Person")
+      
+      ggplotly(p, source = "p2_comp", tooltip="text") %>%
+        layout(yaxis = list(ticks="", showticklabels=FALSE, fixedrange=TRUE),
+               xaxis = list(fixedrange=TRUE)) %>% 
+        config(displayModeBar=FALSE)
+    }
+    else{
+      p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
+      if(p2_person == "Daniel"){
+        df <- df_daniel
+      }
+      else if(p2_person == "Mikołaj"){
+        df <- df_mikolaj
+      }
+      else {
+        df <- df_krzysiek
+      }
+      df <- df %>% filter(ts > input$p2_time[1], ts < input$p2_time[2])
+      df$platform <- factor(df$platform, levels = c("PC", "Phone", "Other"))
+      
+      p <- ggplot(df, aes(x=hour*60*60 + min*60 + s, y=..count../2000, color=platform)) +
+        geom_density(aes(weight=ms_played,
+                         text = paste("Device:", platform))) +
+        scale_y_continuous(name="") +
+        scale_x_continuous(name = "Hour",
+                           breaks = (0:8)*60*60*3,
+                           labels = seq(from=0, to=24, by=3)) +
+        scale_color_manual(values = c("#1ED760", "#00F5D2", "#23F500")) +
+        theme(panel.background = element_rect(fill = "#040404"),
+              plot.background = element_rect(fill = "#040404"),
+              text = element_text(color = "#FFFFFF"),
+              axis.text = element_text(color = "#FFFFFF"),
+              legend.text = element_text(colour = "#FFFFFF"),
+              legend.background = element_rect(fill="#040404", colour="#888888"),
+              axis.ticks = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+              axis.title.y = element_blank(),
+              axis.title.x = element_text()) +
+        labs(colour = "Device")
+      
+      ggplotly(p, source = "p2_density", tooltip = "text") %>%
+        layout(yaxis = list(ticks="", showticklabels=FALSE, fixedrange=TRUE),
+               xaxis = list(fixedrange=TRUE)) %>% 
+        config(displayModeBar=FALSE)
+    }
+  })
   
-  ggplotly(p, source = "p2_comp", tooltip="text") %>%
-    layout(yaxis = list(ticks="", showticklabels=FALSE, fixedrange=TRUE),
-           xaxis = list(fixedrange=TRUE)) %>% 
-    config(displayModeBar=FALSE)
-  }
-  else{
+  output$p2_UI_time_input <- renderUI({
+    p2_ed <- event_data("plotly_click", source="p2_comp")
+    if(is.null(p2_ed)){
+      df <- bind_rows(list(df_daniel,
+                           df_mikolaj,
+                           df_krzysiek),
+                      .id="person")
+    }
+    else{
+      p2_person <- c("Daniel", "Krzysiek", "Mikolaj")[p2_ed$curveNumber + 1]
+      if(p2_person == "Daniel"){
+        df <- df_daniel
+      }
+      else if(p2_person == "Mikołaj"){
+        df <- df_mikolaj
+      }
+      else {
+        df <- df_krzysiek
+      }
+    }
+    min_time <- min(df$ts)
+    max_time <- max(df$ts)
+    
+    tagList(
+      h5("Select time period:", style = "color: #FFFFFF;"),
+      sliderInput(
+        inputId = "p2_time",
+        label = NULL,
+        min = min_time,
+        max = max_time,
+        value = c(min_time,
+                  max_time),
+        timeFormat = "%b %Y",
+        width="100%"
+      ) 
+    )
+  })
+  
+  output$p2_heatmap <- renderPlotly({
+    p2_ed <- event_data("plotly_click", source="p2_comp")
     p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
     if(p2_person == "Daniel"){
       df <- df_daniel
@@ -300,46 +381,63 @@ server <- function(input, output, session){
       df <- df_krzysiek
     }
     df <- df %>% filter(ts > input$p2_time[1], ts < input$p2_time[2])
-    df$platform <- factor(df$platform, levels = c("PC", "Phone", "Other"))
     
-    p <- ggplot(df, aes(x=hour*60*60 + min*60 + s, y=..count../2000, color=platform)) +
-      geom_density(aes(weight=ms_played,
-                       text = paste("Device:", platform))) +
-      scale_y_continuous(name="") +
-      scale_x_continuous(name = "Hour",
-                         breaks = (0:8)*60*60*3,
-                         labels = seq(from=0, to=24, by=3)) +
-      scale_color_manual(values = c("#1ED760", "#00F5D2", "#23F500")) +
+    df_heatmap <- expand.grid(weekday = 1:7, hour = 0:23)
+    df_heatmap <- df_heatmap %>% 
+      merge(
+        df %>%
+          group_by(weekday, hour) %>% 
+          summarise(z = sum(ms_played)),
+        by = c("weekday", "hour"),
+        all.x=TRUE
+      ) %>% 
+      mutate(z = ifelse(is.na(z), 0, z))
+    
+    p <- ggplot(df_heatmap) + 
+      geom_tile(aes(x=weekday,
+                    y=hour,
+                    fill=z,
+                    text=paste("Day:", wdays[weekday],
+                               "\nTime:", hours[hour],
+                               "\nTotal listening time:",
+                               strftime(
+                                 as.POSIXlt.numeric(z/1000,
+                                                    format="%OS",
+                                                    origin="")-3600,
+                                 format="%H:%M:%OS"))),
+                color = "#040404", #powinny być przerwy między kafelkami
+                lwd = 1) +         #ale plotly nie dziła :(((
+      scale_x_continuous(breaks=1:7, labels=wdays2) +
+      scale_y_reverse(breaks=0:23, labels=hours) +
+      scale_fill_gradient(high = "#1ED760",
+                          low = "black",
+                          breaks = c(max(df_heatmap$z), min(df_heatmap$z)),
+                          labels = c("More", "Less")) +
       theme(panel.background = element_rect(fill = "#040404"),
             plot.background = element_rect(fill = "#040404"),
             text = element_text(color = "#FFFFFF"),
-            axis.text = element_text(color = "#FFFFFF"),
+            axis.text.x = element_text(color = "#FFFFFF"),
+            axis.text.y = element_text(color = "#FFFFFF"),
             legend.text = element_text(colour = "#FFFFFF"),
             legend.background = element_rect(fill="#040404", colour="#888888"),
             axis.ticks = element_blank(),
             panel.grid.minor = element_blank(),
-            panel.grid.major = element_line(size = 0.3, colour = "#888888"),
-            axis.title.y = element_blank(),
+            panel.grid.major = element_blank(),
             axis.title.x = element_text()) +
-      labs(colour = "Device")
+      #coord_fixed(ratio = 1) +
+      labs(x = "Day of Week",
+           y = "Hour",
+           fill = "")
     
-    ggplotly(p, source = "p2_density", tooltip = "text") %>%
-      layout(yaxis = list(ticks="", showticklabels=FALSE, fixedrange=TRUE),
-             xaxis = list(fixedrange=TRUE)) %>% 
-      config(displayModeBar=FALSE)
-  }
+    ggplotly(p, source="p2_tile", tooltip="text") %>% 
+      config(displayModeBar=FALSE) %>% 
+      layout(yaxis = list(fixedrange=TRUE),
+             xaxis = list(fixedrange=TRUE))
   })
-
-output$p2_UI_time_input <- renderUI({
-  p2_ed <- event_data("plotly_click", source="p2_comp")
-  if(is.null(p2_ed)){
-    df <- bind_rows(list(df_daniel,
-                         df_mikolaj,
-                         df_krzysiek),
-                    .id="person")
-  }
-  else{
-    p2_person <- c("Daniel", "Krzysiek", "Mikolaj")[p2_ed$curveNumber + 1]
+  
+  output$p2_bar <- renderPlotly({
+    p2_ed <- event_data("plotly_click", source="p2_comp")
+    p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
     if(p2_person == "Daniel"){
       df <- df_daniel
     }
@@ -349,222 +447,124 @@ output$p2_UI_time_input <- renderUI({
     else {
       df <- df_krzysiek
     }
-  }
-  min_time <- min(df$ts)
-  max_time <- max(df$ts)
+    df <- df %>% 
+      select(ts, ms_played) %>% 
+      mutate(date = as.Date(ts)) %>% 
+      filter(date >= as.Date("2021-01-01")) %>% 
+      group_by(group = format(date, input$p2_buckets)) %>% 
+      summarise(ms_played = sum(ms_played, na.rm=TRUE))
+    if (input$p2_buckets=="%m %d") {
+      df <- df_p2_bar %>% 
+        merge(df, by = "group", all.x=TRUE) %>% 
+        mutate(ms_played = ifelse(is.na(ms_played), 0, ms_played))
+    }
+    
+    p2_tick_labs <- function(x) paste(floor(x/(1000*60*60)),
+                                      "h",
+                                      floor(x/(1000*60) - 60*floor(x/(1000*60*60))),
+                                      "min")
+    
+    p <- ggplot(df) +
+      geom_col(aes(x=group,
+                   y=ms_played,
+                   text=paste(
+                     "Total listening time:",
+                     p2_tick_labs(ms_played)
+                   )), fill = "#1ED760") +
+      theme(panel.background = element_rect(fill = "#040404"),
+            plot.background = element_rect(fill = "#040404"),
+            text = element_text(color = "#FFFFFF"),
+            axis.text = element_text(color = "#FFFFFF"),
+            legend.text = element_text(colour = "#FFFFFF"),
+            axis.ticks = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.grid.major = element_line(size = 0.3, colour = "#888888")) +
+      scale_y_continuous(labels=p2_tick_labs) +
+      labs(y = "Total listening time", x = "Month")
+    if(input$p2_buckets == "%m") {
+      p <- p + 
+        scale_x_discrete(breaks = str_pad(1:12, 2, pad="0"), labels=mnames2)
+    }
+    else {
+      p <- p +
+        scale_x_discrete(breaks = paste(str_pad(1:12, 2, pad="0"), rep("15", 12)),
+                         labels = mnames2)
+    }
+    ggplotly(p, source = "p2_barplot_time", tooltip = "text") %>% 
+      config(displayModeBar=FALSE) %>% 
+      layout(yaxis = list(fixedrange=TRUE))
+  })
   
-  tagList(
-    h5("Select time period:", style = "color: #FFFFFF;"),
-    sliderInput(
-      inputId = "p2_time",
-      label = NULL,
-      min = min_time,
-      max = max_time,
-      value = c(min_time,
-                max_time),
-      timeFormat = "%b %Y",
-      width="100%"
-    ) 
-  )
-})
-
-output$p2_heatmap <- renderPlotly({
-  p2_ed <- event_data("plotly_click", source="p2_comp")
-  p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
-  if(p2_person == "Daniel"){
-    df <- df_daniel
-  }
-  else if(p2_person == "Mikołaj"){
-    df <- df_mikolaj
-  }
-  else {
-    df <- df_krzysiek
-  }
-  df <- df %>% filter(ts > input$p2_time[1], ts < input$p2_time[2])
-  
-  df_heatmap <- expand.grid(weekday = 1:7, hour = 0:23)
-  df_heatmap <- df_heatmap %>% 
-    merge(
-      df %>%
-        group_by(weekday, hour) %>% 
-        summarise(z = sum(ms_played)),
-      by = c("weekday", "hour"),
-      all.x=TRUE
-    ) %>% 
-    mutate(z = ifelse(is.na(z), 0, z))
-  
-  p <- ggplot(df_heatmap) + 
-    geom_tile(aes(x=weekday,
-                  y=hour,
-                  fill=z,
-                  text=paste("Day:", wdays[weekday],
-                             "\nTime:", hours[hour],
-                             "\nTotal listening time:",
-                             strftime(
-                               as.POSIXlt.numeric(z/1000,
-                                                  format="%OS",
-                                                  origin="")-3600,
-                               format="%H:%M:%OS"))),
-              color = "#040404", #powinny być przerwy między kafelkami
-              lwd = 1) +         #ale plotly nie dziła :(((
-    scale_x_continuous(breaks=1:7, labels=wdays2) +
-    scale_y_reverse(breaks=0:23, labels=hours) +
-    scale_fill_gradient(high = "#1ED760",
-                        low = "black",
-                        breaks = c(max(df_heatmap$z), min(df_heatmap$z)),
-                        labels = c("More", "Less")) +
-    theme(panel.background = element_rect(fill = "#040404"),
-          plot.background = element_rect(fill = "#040404"),
-          text = element_text(color = "#FFFFFF"),
-          axis.text.x = element_text(color = "#FFFFFF"),
-          axis.text.y = element_text(color = "#FFFFFF"),
-          legend.text = element_text(colour = "#FFFFFF"),
-          legend.background = element_rect(fill="#040404", colour="#888888"),
-          axis.ticks = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.grid.major = element_blank(),
-          axis.title.x = element_text()) +
-    #coord_fixed(ratio = 1) +
-    labs(x = "Day of Week",
-         y = "Hour",
-         fill = "")
-  
-  ggplotly(p, source="p2_tile", tooltip="text") %>% 
-    config(displayModeBar=FALSE) %>% 
-    layout(yaxis = list(fixedrange=TRUE),
-           xaxis = list(fixedrange=TRUE))
-})
-
-output$p2_bar <- renderPlotly({
-  p2_ed <- event_data("plotly_click", source="p2_comp")
-  p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
-  if(p2_person == "Daniel"){
-    df <- df_daniel
-  }
-  else if(p2_person == "Mikołaj"){
-    df <- df_mikolaj
-  }
-  else {
-    df <- df_krzysiek
-  }
-  df <- df %>% 
-    select(ts, ms_played) %>% 
-    mutate(date = as.Date(ts)) %>% 
-    filter(date >= as.Date("2021-01-01")) %>% 
-    group_by(group = format(date, input$p2_buckets)) %>% 
-    summarise(ms_played = sum(ms_played, na.rm=TRUE))
-  if (input$p2_buckets=="%m %d") {
-    df <- df_p2_bar %>% 
-      merge(df, by = "group", all.x=TRUE) %>% 
-      mutate(ms_played = ifelse(is.na(ms_played), 0, ms_played))
-  }
-  
-  p2_tick_labs <- function(x) paste(floor(x/(1000*60*60)),
-                                    "h",
-                                    floor(x/(1000*60) - 60*floor(x/(1000*60*60))),
-                                    "min")
-  
-  p <- ggplot(df) +
-    geom_col(aes(x=group,
-                 y=ms_played,
-                 text=paste(
-                   "Total listening time:",
-                   p2_tick_labs(ms_played)
-                 )), fill = "#1ED760") +
-    theme(panel.background = element_rect(fill = "#040404"),
-          plot.background = element_rect(fill = "#040404"),
-          text = element_text(color = "#FFFFFF"),
-          axis.text = element_text(color = "#FFFFFF"),
-          legend.text = element_text(colour = "#FFFFFF"),
-          axis.ticks = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.grid.major = element_line(size = 0.3, colour = "#888888")) +
-    scale_y_continuous(labels=p2_tick_labs) +
-    labs(y = "Total listening time", x = "Month")
-  if(input$p2_buckets == "%m") {
-    p <- p + 
-      scale_x_discrete(breaks = str_pad(1:12, 2, pad="0"), labels=mnames2)
-  }
-  else {
-    p <- p +
-      scale_x_discrete(breaks = paste(str_pad(1:12, 2, pad="0"), rep("15", 12)),
-                       labels = mnames2)
-  }
-  ggplotly(p, source = "p2_barplot_time", tooltip = "text") %>% 
-    config(displayModeBar=FALSE) %>% 
-    layout(yaxis = list(fixedrange=TRUE))
-})
-
-output$p2_UI <- renderUI({
-  
-  p2_ed <- event_data("plotly_click", source="p2_comp")
-  if(is.null(p2_ed)) { tagList(
-    h4("What time of the day do we listen to music?", style = "color: #FFFFFF"),
-    withSpinner(plotlyOutput("p2_density"), color="#1ED760", type=4),
-    uiOutput("p2_UI_time_input") 
-  )}
-  else {
-    p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
-    tagList(
-      
-      
-      fluidRow(
-        box(width = 6,
-            h4(paste("What time of the day does", p2_person, "listen to music?"), style = "color: #FFFFFF"),
-            withSpinner(plotlyOutput("p2_density"), color="#1ED760", type=4),
-            background = "red"
+  output$p2_UI <- renderUI({
+    
+    p2_ed <- event_data("plotly_click", source="p2_comp")
+    if(is.null(p2_ed)) { tagList(
+      h4("What time of the day do we listen to music?", style = "color: #FFFFFF"),
+      withSpinner(plotlyOutput("p2_density"), color="#1ED760", type=4),
+      uiOutput("p2_UI_time_input") 
+    )}
+    else {
+      p2_person <- c("Daniel", "Krzysiek", "Mikołaj")[p2_ed$curveNumber + 1]
+      tagList(
+        
+        
+        fluidRow(
+          box(width = 6,
+              h4(paste("What time of the day does", p2_person, "listen to music?"), style = "color: #FFFFFF"),
+              withSpinner(plotlyOutput("p2_density"), color="#1ED760", type=4),
+              background = "red"
+          ),
+          
+          box(width = 6,
+              h4(paste("What time of the week does", p2_person, "listen to music?"), style = "color: #FFFFFF"),
+              withSpinner(plotlyOutput("p2_heatmap"), color="#1ED760", type=4),
+              background = "red"
+          )
         ),
         
-        box(width = 6,
-            h4(paste("What time of the week does", p2_person, "listen to music?"), style = "color: #FFFFFF"),
-            withSpinner(plotlyOutput("p2_heatmap"), color="#1ED760", type=4),
-            background = "red"
-        )
-      ),
-      
-      br(),
-      
-      fluidRow(
-        box(width = 3,
-               h5("Barplot controls:", style = "color: #FFFFFF"),
-               br(),
-               radioButtons(
-                 inputId = "p2_buckets",
-                 label = "",
-                 choices = c("Month" = "%m",
-                             "Day" = "%m %d"),
-                 selected = "%m",
-                 width = "100%",
-                 inline = TRUE
-               ),
-            background = "red"
+        br(),
+        
+        fluidRow(
+          box(width = 3,
+              h5("Barplot controls:", style = "color: #FFFFFF"),
+              br(),
+              radioButtons(
+                inputId = "p2_buckets",
+                label = "",
+                choices = c("Month" = "%m",
+                            "Day" = "%m %d"),
+                selected = "%m",
+                width = "100%",
+                inline = TRUE
+              ),
+              background = "red"
+          ),
+          box(width = 3,
+              h5("Return:", style = "color: #FFFFFF"),
+              br(),
+              actionButton(inputId = "p2_reset",
+                           label = "",
+                           icon = icon("backward"),
+                           width = "100%"),
+              background = "red"
+          ),
+          box(width = 6,
+              uiOutput("p2_UI_time_input"),
+              background = "red"
+          )
         ),
-        box(width = 3,
-               h5("Return:", style = "color: #FFFFFF"),
-               br(),
-               actionButton(inputId = "p2_reset",
-                            label = "",
-                            icon = icon("backward"),
-                            width = "100%"),
-            background = "red"
-        ),
-        box(width = 6,
-            uiOutput("p2_UI_time_input"),
-            background = "red"
+        
+        fluidRow(
+          h4(paste(p2_person, "'s listening time last year", sep=""), style = "color: #FFFFFF"),
+          withSpinner(plotlyOutput("p2_bar"), color="#1ED760", type=4)
         )
-      ),
-      
-      fluidRow(
-        h4(paste(p2_person, "'s listening time last year", sep=""), style = "color: #FFFFFF"),
-        withSpinner(plotlyOutput("p2_bar"), color="#1ED760", type=4)
       )
-    )
-  }
-})
-
-observeEvent(input$p2_reset, {
-  runjs("Shiny.setInputValue('plotly_click-p2_comp', null);")
-})
+    }
+  })
+  
+  observeEvent(input$p2_reset, {
+    runjs("Shiny.setInputValue('plotly_click-p2_comp', null);")
+  })
   
   
   
@@ -624,8 +624,8 @@ observeEvent(input$p2_reset, {
     
     
     wordcloud(df$genres, df$count, col = terrain.colors(length(df$genres)), bg = "#121212", scale = c(4, 1.5))
-  
-
+    
+    
   })
   
   output$density_plot <- renderPlotly({
@@ -643,7 +643,7 @@ observeEvent(input$p2_reset, {
     density_df_daniel <- df_daniel_M %>% 
       select(danceability, energy, acousticness, instrumentalness, speechiness, valence) %>% 
       lapply(., density, na.rm = TRUE)
-      
+    
     feature_names <- names(density_df_daniel)
     
     
@@ -663,10 +663,10 @@ observeEvent(input$p2_reset, {
     
     
     plots <- lapply(feature_names, function(feature_n) {
-        plot_ly(
-          type = 'scatter',
-          mode = 'lines' 
-        ) %>% 
+      plot_ly(
+        type = 'scatter',
+        mode = 'lines' 
+      ) %>% 
         add_trace(
           x = density_df_krzysiek[[feature_n]][['x']],
           y = density_df_krzysiek[[feature_n]][['y']],
@@ -702,15 +702,15 @@ observeEvent(input$p2_reset, {
           font = list(color="white")
         ) %>% 
         config(displayModeBar = FALSE)
-     
-     
-     
-     
+      
+      
+      
+      
     })
     firstRow <- subplot(plots[1:3], nrows = 1, titleX = TRUE) 
     secondRow <- subplot(plots[4:6], shareX = TRUE, nrows = 1, titleX = TRUE) 
     subplot(firstRow, secondRow, nrows = 2, titleX = TRUE, margin = 0.05) %>%
-    config(displayModeBar = FALSE)
+      config(displayModeBar = FALSE)
     
   })
   
@@ -739,9 +739,9 @@ observeEvent(input$p2_reset, {
     
     
     fig <- plot_ly(
-        type = 'scatterpolar',
-        mode = 'markers',
-        fill = 'toself'
+      type = 'scatterpolar',
+      mode = 'markers',
+      fill = 'toself'
     )
     
     if (input$person == "Krzysiek") {
@@ -1023,104 +1023,104 @@ observeEvent(input$p2_reset, {
   
   
   observeEvent(event_data("plotly_click", source = "2"), {
-      
-      if(input$personPlot3 == "Mikolaj"){
-        df <- df_mikolaj
-      }
-      else if(input$personPlot3 == "Krzysiek"){
-        df <- df_krzysiek
-      }
-      else{
-        df <- df_daniel
-      }
-      
-      
-      barData = event_data("plotly_click", source = "2")
-      
-      
-      df1 <- df %>% 
-        group_by(master_metadata_album_album_name) %>% 
-        summarise(Time = sum(ms_played)/60000) %>% 
-        arrange(-Time) %>% 
-        head(input$n) %>% 
-        mutate(master_metadata_album_album_name = fct_reorder(master_metadata_album_album_name, Time))
-      
-      artist <- df1[barData$pointNumber+1,1] %>% 
-        mutate(master_metadata_album_album_name = as.character(master_metadata_album_album_name))
-      
-      artist <- as.character(artist)
-      
-      favSong <- df %>% 
-        filter(master_metadata_album_album_name == artist) %>% 
-        group_by(master_metadata_track_name) %>% 
-        summarise(Sum = sum(ms_played)/60000) %>%
-        arrange(-Sum) %>% 
-        head(5)
-      colnames(favSong) <- c("Track Name", "Minutes Listened")
-      
-      wykon <- ez <- as.character(df_daniel %>%
-                                    filter(master_metadata_track_name == artist)%>%
-                                    head(1)%>%
-                                    select(master_metadata_album_artist_name))
-      
     
-      showModal(modalDialog(title = tags$a(style = "color: white", icon('robot'), as.character(artist)), easyClose = TRUE,
-                            renderText(paste("Wykonawca : ", wykon)),
-                            br(),
-                            renderPlot({
-                              endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
-                              MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
-                              
-                              df1 <- data.frame(endMonth, MonthSum)
-                              
-                              
-                              
-                              df2 <- df %>% 
-                                mutate(endTime = as.Date(ts)) %>% 
-                                mutate(
-                                  endMonth = strftime(endTime, "%m")
-                                ) %>% 
-                                filter(master_metadata_album_album_name == artist) %>% 
-                                group_by(endMonth) %>% 
-                                summarise(MonthSum = sum(ms_played)/60000)
-                              
-                              df3 <- rbind(df2,df1)
-                              
-                              ggplot(df3,aes(x = endMonth, y = MonthSum))+
-                                geom_col(fill = "#1ED760")+
-                                theme(panel.background = element_rect(fill = "#121212"),
-                                      plot.background = element_rect(fill = "#121212"),
-                                      text = element_text(color = "#FFFFFF"),
-                                      axis.text = element_text(color = "#FFFFFF"),
-                                      legend.text = element_text(colour = "#FFFFFF"),
-                                      axis.ticks = element_blank(),
-                                      panel.grid.minor = element_blank(),
-                                      panel.grid.major = element_line(size = 0.3, colour = "#888888"),
-                                      axis.title.y = element_text(),
-                                      axis.title.x = element_text())+
-                                labs(x = "Month", y = "Minutes played")+
-                                scale_x_discrete(labels = c("Jan","Feb","Mar", "Apr", "May", "June", "Jul","Aug","Sep","Oct","Nov","Dec"))
-                            }),
-                            br(),
-                            render_gt({
-                              gt(favSong) %>% 
-                                tab_header(title = md("Favourite tracks on selected album")) %>% 
-                                tab_style(
-                                  style = list(
-                                    cell_text(color = 'white'),
-                                    cell_fill(color = "#121212")
-                                  ),
-                                  locations = list(
-                                    cells_body(),
-                                    cells_title(),
-                                    cells_column_labels()
-                                    
-                                  )
+    if(input$personPlot3 == "Mikolaj"){
+      df <- df_mikolaj
+    }
+    else if(input$personPlot3 == "Krzysiek"){
+      df <- df_krzysiek
+    }
+    else{
+      df <- df_daniel
+    }
+    
+    
+    barData = event_data("plotly_click", source = "2")
+    
+    
+    df1 <- df %>% 
+      group_by(master_metadata_album_album_name) %>% 
+      summarise(Time = sum(ms_played)/60000) %>% 
+      arrange(-Time) %>% 
+      head(input$n) %>% 
+      mutate(master_metadata_album_album_name = fct_reorder(master_metadata_album_album_name, Time))
+    
+    artist <- df1[barData$pointNumber+1,1] %>% 
+      mutate(master_metadata_album_album_name = as.character(master_metadata_album_album_name))
+    
+    artist <- as.character(artist)
+    
+    favSong <- df %>% 
+      filter(master_metadata_album_album_name == artist) %>% 
+      group_by(master_metadata_track_name) %>% 
+      summarise(Sum = sum(ms_played)/60000) %>%
+      arrange(-Sum) %>% 
+      head(5)
+    colnames(favSong) <- c("Track Name", "Minutes Listened")
+    
+    wykon <- ez <- as.character(df_daniel %>%
+                                  filter(master_metadata_track_name == artist)%>%
+                                  head(1)%>%
+                                  select(master_metadata_album_artist_name))
+    
+    
+    showModal(modalDialog(title = tags$a(style = "color: white", icon('robot'), as.character(artist)), easyClose = TRUE,
+                          renderText(paste("Wykonawca : ", wykon)),
+                          br(),
+                          renderPlot({
+                            endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
+                            MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
+                            
+                            df1 <- data.frame(endMonth, MonthSum)
+                            
+                            
+                            
+                            df2 <- df %>% 
+                              mutate(endTime = as.Date(ts)) %>% 
+                              mutate(
+                                endMonth = strftime(endTime, "%m")
+                              ) %>% 
+                              filter(master_metadata_album_album_name == artist) %>% 
+                              group_by(endMonth) %>% 
+                              summarise(MonthSum = sum(ms_played)/60000)
+                            
+                            df3 <- rbind(df2,df1)
+                            
+                            ggplot(df3,aes(x = endMonth, y = MonthSum))+
+                              geom_col(fill = "#1ED760")+
+                              theme(panel.background = element_rect(fill = "#121212"),
+                                    plot.background = element_rect(fill = "#121212"),
+                                    text = element_text(color = "#FFFFFF"),
+                                    axis.text = element_text(color = "#FFFFFF"),
+                                    legend.text = element_text(colour = "#FFFFFF"),
+                                    axis.ticks = element_blank(),
+                                    panel.grid.minor = element_blank(),
+                                    panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+                                    axis.title.y = element_text(),
+                                    axis.title.x = element_text())+
+                              labs(x = "Month", y = "Minutes played")+
+                              scale_x_discrete(labels = c("Jan","Feb","Mar", "Apr", "May", "June", "Jul","Aug","Sep","Oct","Nov","Dec"))
+                          }),
+                          br(),
+                          render_gt({
+                            gt(favSong) %>% 
+                              tab_header(title = md("Favourite tracks on selected album")) %>% 
+                              tab_style(
+                                style = list(
+                                  cell_text(color = 'white'),
+                                  cell_fill(color = "#121212")
+                                ),
+                                locations = list(
+                                  cells_body(),
+                                  cells_title(),
+                                  cells_column_labels()
+                                  
                                 )
-                              
-                              
-                            })
-      ))
+                              )
+                            
+                            
+                          })
+    ))
     
     
   })
@@ -1129,98 +1129,98 @@ observeEvent(input$p2_reset, {
   
   
   observeEvent(event_data("plotly_click", source = "1"), {
+    
+    if(input$personPlot3 == "Mikolaj"){
+      df <- df_mikolaj
+    }
+    else if(input$personPlot3 == "Krzysiek"){
+      df <- df_krzysiek
+    }
+    else{
+      df <- df_daniel
+    }
+    
+    barData = event_data("plotly_click", source = "1")
+    
+    df1 <- df %>% 
+      group_by(master_metadata_album_artist_name) %>% 
+      summarise(Time = sum(ms_played)/60000) %>% 
+      arrange(-Time) %>% 
+      head(input$n) %>% 
+      mutate(master_metadata_album_artist_name = fct_reorder(master_metadata_album_artist_name, Time))
+    
+    artist <- df1[barData$pointNumber+1,1] %>% 
+      mutate(master_metadata_album_artist_name = as.character(master_metadata_album_artist_name))
+    
+    artist <- as.character(artist)
+    
+    favSong <- df %>% 
+      filter(master_metadata_album_artist_name == artist) %>% 
+      group_by(master_metadata_track_name) %>% 
+      summarise(Sum = sum(ms_played)/60000) %>%
+      arrange(-Sum) %>% 
+      head(5)
+    colnames(favSong) <- c("Track Name", "Minutes Listened")
+    
+    
+    
+    showModal(modalDialog(easyClose = TRUE, title = tags$a(style = "color: white", icon('robot'), as.character(artist)), renderPlot({
       
-      if(input$personPlot3 == "Mikolaj"){
-        df <- df_mikolaj
-      }
-      else if(input$personPlot3 == "Krzysiek"){
-        df <- df_krzysiek
-      }
-      else{
-        df <- df_daniel
-      }
+      endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
+      MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
       
-      barData = event_data("plotly_click", source = "1")
+      df1 <- data.frame(endMonth, MonthSum)
       
-      df1 <- df %>% 
-        group_by(master_metadata_album_artist_name) %>% 
-        summarise(Time = sum(ms_played)/60000) %>% 
-        arrange(-Time) %>% 
-        head(input$n) %>% 
-        mutate(master_metadata_album_artist_name = fct_reorder(master_metadata_album_artist_name, Time))
       
-      artist <- df1[barData$pointNumber+1,1] %>% 
-        mutate(master_metadata_album_artist_name = as.character(master_metadata_album_artist_name))
       
-      artist <- as.character(artist)
-      
-      favSong <- df %>% 
+      df2 <- df %>% 
+        mutate(endTime = as.Date(ts)) %>% 
+        mutate(
+          endMonth = strftime(endTime, "%m")
+        ) %>% 
         filter(master_metadata_album_artist_name == artist) %>% 
-        group_by(master_metadata_track_name) %>% 
-        summarise(Sum = sum(ms_played)/60000) %>%
-        arrange(-Sum) %>% 
-        head(5)
-      colnames(favSong) <- c("Track Name", "Minutes Listened")
+        group_by(endMonth) %>% 
+        summarise(MonthSum = sum(ms_played)/60000)
       
+      df3 <- rbind(df2,df1)
       
-      
-      showModal(modalDialog(easyClose = TRUE, title = tags$a(style = "color: white", icon('robot'), as.character(artist)), renderPlot({
-        
-        endMonth <- as.character(c("01","02","03","04","05","06","07","08","09","10","11","12"))
-        MonthSum <- c(0,0,0,0,0,0,0,0,0,0,0,0)
-        
-        df1 <- data.frame(endMonth, MonthSum)
-        
-        
-        
-        df2 <- df %>% 
-          mutate(endTime = as.Date(ts)) %>% 
-          mutate(
-            endMonth = strftime(endTime, "%m")
-          ) %>% 
-          filter(master_metadata_album_artist_name == artist) %>% 
-          group_by(endMonth) %>% 
-          summarise(MonthSum = sum(ms_played)/60000)
-        
-        df3 <- rbind(df2,df1)
-        
-        ggplot(df3,aes(x = endMonth, y = MonthSum))+
-          geom_col(fill = "#1ED760")+
-          theme(panel.background = element_rect(fill = "#040404"),
-                plot.background = element_rect(fill = "#040404"),
-                text = element_text(color = "#FFFFFF"),
-                axis.text = element_text(color = "#FFFFFF"),
-                legend.text = element_text(colour = "#FFFFFF"),
-                axis.ticks = element_blank(),
-                panel.grid.minor = element_blank(),
-                panel.grid.major = element_line(size = 0.3, colour = "#888888"),
-                axis.title.y = element_blank(),
-                axis.title.x = element_text())+
-          labs(x = "Month", y = "Minutes played")+
-          scale_x_discrete(labels = c("Jan","Feb","Mar", "Apr", "May", "June", "Jul","Aug","Sep","Oct","Nov","Dec"))
-      }),
-      
-      br(),
-      render_gt({
-        gt(favSong) %>% 
-          tab_header(title = md("Favourite tracks")) %>% 
-          tab_style(
-            style = list(
-              cell_text(color = 'white'),
-              cell_fill(color = "#121212")
-            ),
-            locations = list(
-              cells_body(),
-              cells_title(),
-              cells_column_labels()
-              
-            )
+      ggplot(df3,aes(x = endMonth, y = MonthSum))+
+        geom_col(fill = "#1ED760")+
+        theme(panel.background = element_rect(fill = "#040404"),
+              plot.background = element_rect(fill = "#040404"),
+              text = element_text(color = "#FFFFFF"),
+              axis.text = element_text(color = "#FFFFFF"),
+              legend.text = element_text(colour = "#FFFFFF"),
+              axis.ticks = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.grid.major = element_line(size = 0.3, colour = "#888888"),
+              axis.title.y = element_blank(),
+              axis.title.x = element_text())+
+        labs(x = "Month", y = "Minutes played")+
+        scale_x_discrete(labels = c("Jan","Feb","Mar", "Apr", "May", "June", "Jul","Aug","Sep","Oct","Nov","Dec"))
+    }),
+    
+    br(),
+    render_gt({
+      gt(favSong) %>% 
+        tab_header(title = md("Favourite tracks")) %>% 
+        tab_style(
+          style = list(
+            cell_text(color = 'white'),
+            cell_fill(color = "#121212")
+          ),
+          locations = list(
+            cells_body(),
+            cells_title(),
+            cells_column_labels()
+            
           )
-        
-        
-      })
+        )
       
-      ))
+      
+    })
+    
+    ))
   })
   
   output$sidebar <- renderUI({
@@ -1245,9 +1245,9 @@ observeEvent(input$p2_reset, {
     }
     
   })
-
-}
   
+}
+
 
 
 
@@ -1367,7 +1367,7 @@ app_ui <- dashboardPage(
                 box(
                   h4("Prefered features comparison", style = "color: #FFFFFF"),
                   plotlyOutput("radar_plot", width = "90%"), width = 6, background = "red"
-                    
+                  
                 ),
                 box(plotlyOutput("density_plot"), width = 6, background = "red")  
               )
