@@ -786,7 +786,7 @@ observeEvent(input$p2_reset, {
     
     fig  %>%
       layout(
-        font = list(color = "#1DB954"),
+        font = list(color = "#FFFFFF"),
         plot_bgcolor  = "rgba(0, 0, 0, 0)",
         paper_bgcolor = "rgba(0, 0, 0, 0)",
         polar = list(
@@ -1190,8 +1190,8 @@ app_ui <- dashboardPage(
               ), 
               fluidRow(
                 h4("Prefered features comparison", style = "color: #FFFFFF"),
-                box(plotlyOutput("radar_plot", width = "50%"), width = 4, background = "red"),
-                box(plotlyOutput("density_plot"), width = 8, background = "red")  
+                box(plotlyOutput("radar_plot"), width = 6, background = "red"),
+                box(plotlyOutput("density_plot"), width = 6, background = "red")  
               )
               
       ),
