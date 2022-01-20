@@ -667,6 +667,8 @@ observeEvent(input$p2_reset, {
         add_trace(
           x = density_df_krzysiek[[feature_n]][['x']],
           y = density_df_krzysiek[[feature_n]][['y']],
+          hovertemplate = paste("Feature: %{theta}<br>Value: %{r:.3f}<extra></extra>"),
+          
           color = 'red', 
           opacity = alpha_krzysiek,
           name = 'Krzysiek'
@@ -1061,6 +1063,28 @@ observeEvent(input$p2_reset, {
       ))
   })
   
+  output$sidebar <- renderUI({
+    if (input$menu == "top") {
+      tagList(
+        sliderInput(
+          inputId = "n", 
+          label = "Select number of displayed artists: ", 
+          min = 5, 
+          max = 15, 
+          value = 10
+        ),
+        selectInput(
+          inputId = "personPlot3", 
+          label = "Select person: ", 
+          choices = c("Krzysiek", "Mikołaj", "Daniel"), 
+          selected = "Krzysiek"
+        )
+      )
+    } else if (input$menu == "preferences") {
+      radioButtons("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj"))
+    }
+    
+  })
 
 }
   
@@ -1076,23 +1100,12 @@ app_ui <- dashboardPage(
   dashboardSidebar(
     width = "230px",
     sidebarMenu(
+      id = "menu",
       menuItem("Top", tabName = "top", icon = icon('heart')),
       menuItem("Activity", tabName = "activity", icon = icon('calendar')),
       menuItem("Preferences", tabName = "preferences", icon = icon('chart-line'))
     ),
-    sliderInput(
-      inputId = "n", 
-      label = "Select number of displayed artists: ", 
-      min = 5, 
-      max = 15, 
-      value = 10
-    ),
-    selectInput(
-      inputId = "personPlot3", 
-      label = "Select person: ", 
-      choices = c("Krzysiek", "Mikołaj", "Daniel"), 
-      selected = "Krzysiek"
-    )
+    renderUI("sidebar")
   ),
   dashboardBody(
     tags$head(tags$style(HTML('
@@ -1181,7 +1194,6 @@ app_ui <- dashboardPage(
     '))),
     tabItems(
       tabItem(tabName = "preferences",
-              radioButtons("person", "Select person", choices = c("Daniel", "Krzysiek", "Mikołaj")),
               fluidRow(
                 box(h4("Prefered tracks tempo", style = "color: #FFFFFF"),
                     plotOutput("tempo_histogram"), background = "red"),
