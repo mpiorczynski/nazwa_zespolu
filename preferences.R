@@ -1189,8 +1189,9 @@ app_ui <- dashboardPage(
                     plotOutput("genres"), background = "red")
               ), 
               fluidRow(
-                h4("Prefered features comparison", style = "color: #FFFFFF"),
-                box(plotlyOutput("radar_plot"), width = 6, background = "red"),
+                box(plotlyOutput("radar_plot"), width = 6, background = "red",
+                    h4("Prefered features comparison", style = "color: #FFFFFF")
+                ),
                 box(plotlyOutput("density_plot"), width = 6, background = "red")  
               )
               
