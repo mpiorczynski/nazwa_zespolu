@@ -7,8 +7,8 @@ path_to_data <- "data/krzysiek/endsong.json"
 streaming_history_df <- fromJSON(path_to_data)
 
 # access to API
-Sys.setenv(SPOTIFY_CLIENT_ID = "b9d14492b8234f1fb44794448afe82a8")
-Sys.setenv(SPOTIFY_CLIENT_SECRET = "f705777d52954af8b73ea11089f62358")
+# Sys.setenv(SPOTIFY_CLIENT_ID = "")
+# Sys.setenv(SPOTIFY_CLIENT_SECRET = "")
 access_token <- get_spotify_access_token()
 
 unique_tracks <- unique(streaming_history_df$spotify_track_uri) 
